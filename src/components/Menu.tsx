@@ -159,7 +159,15 @@ export default function Menu() {
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 flex items-center justify-center overflow-hidden">
                 {ayarlar.logoUrl ? (
-                  <img src={ayarlar.logoUrl} alt="Logo" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+                  <img 
+                    src={ayarlar.logoUrl} 
+                    alt="Logo" 
+                    className="w-full h-full object-contain" 
+                    referrerPolicy="no-referrer" 
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/logo.png';
+                    }}
+                  />
                 ) : (
                   <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
                     <Utensils className="text-white" size={20} />
@@ -217,10 +225,13 @@ export default function Menu() {
                     </div>
                     {/* Sağ: Resim (Oval Kavis Efekti) */}
                     <img 
-                      src={yemek.resim} 
+                      src={yemek.resim || 'https://picsum.photos/seed/food/200/200'} 
                       alt={yemek.ad} 
                       className="food-card-image"
                       referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://picsum.photos/seed/food/200/200';
+                      }}
                     />
                   </div>
                 ))}
@@ -253,4 +264,3 @@ export default function Menu() {
     </div>
   );
 }
-
