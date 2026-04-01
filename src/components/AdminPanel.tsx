@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Utensils, ClipboardList, LayoutGrid, Trash2, Bell } from 'lucide-react';
+import { Utensils, ClipboardList, LayoutGrid, Trash2, Bell, Pencil } from 'lucide-react';
 import IconPicker from './IconPicker';
 import { io } from 'socket.io-client';
 
@@ -48,6 +48,10 @@ export default function AdminPanel() {
   const [duzenlenenSiparis, setDuzenlenenSiparis] = useState<any>(null);
   const [siparisler, setSiparisler] = useState<any[]>([]);
   const [cagrilar, setCagrilar] = useState<any[]>([]);
+
+  const [currentPageYemekler, setCurrentPageYemekler] = useState(1);
+  const [currentPageSiparisler, setCurrentPageSiparisler] = useState(1);
+  const itemsPerPage = 10;
 
   const handleSiparisDurumGuncelle = async (id: string, durum: string) => {
     await fetch(`/api/siparisler/${id}`, { 
@@ -258,7 +262,7 @@ export default function AdminPanel() {
               </button>
             </div>
             <div className="space-y-2">
-              {yemekler.map(y => (
+              {yemekler.slice((currentPageYemekler - 1) * itemsPerPage, currentPageYemekler * itemsPerPage).map(y => (
                 <div key={y.id} className="flex justify-between items-center p-2 border-b border-gray-50 text-sm">
                   <div className="flex items-center gap-2">
                     {y.resim && (
@@ -274,18 +278,44 @@ export default function AdminPanel() {
                     )}
                     <div>
                       <p className="font-medium text-gray-700">{y.ad}</p>
-                      <p className="text-xs text-gray-500">{y.fiyat} TL - {y.aktif ? 'Aktif' : 'Pasif'}</p>
+                      <p className="text-xs text-gray-500">{y.fiyat} TL - {y.aktif ? 'Açık' : 'Kapalı'}</p>
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={() => handleYemekToggle(y)} className={y.aktif ? 'text-yellow-600' : 'text-green-600'}>{y.aktif ? 'Pasif Yap' : 'Aktif Yap'}</button>
-                    <button onClick={async () => { await fetch(`/api/yemekler/${y.id}`, { method: 'PUT', body: JSON.stringify({ aktif: 0 }), headers: { 'Content-Type': 'application/json' } }); fetchData(); }} className="text-orange-600">Tükendi</button>
-                    <button onClick={() => handleYemekDuzenle(y)} className="text-blue-500">Düzenle</button>
+                    <button 
+                      onClick={() => handleYemekToggle(y)} 
+                      className={`px-3 py-1 rounded-lg text-xs font-bold ${y.aktif ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}
+                    >
+                      {y.aktif ? 'Kapat' : 'Aç'}
+                    </button>
+                    <button onClick={() => handleYemekDuzenle(y)} className="text-blue-500" title="Düzenle">
+                      <Pencil size={16} />
+                    </button>
                     <button onClick={() => handleYemekSil(y.id)} className="text-red-500"><Trash2 size={16} /></button>
                   </div>
                 </div>
               ))}
             </div>
+            {/* Yemek Sayfalandırma */}
+            {yemekler.length > itemsPerPage && (
+              <div className="flex justify-center gap-2 mt-4">
+                <button 
+                  disabled={currentPageYemekler === 1} 
+                  onClick={() => setCurrentPageYemekler(prev => prev - 1)}
+                  className="px-3 py-1 bg-gray-100 rounded-lg text-xs disabled:opacity-50"
+                >
+                  Geri
+                </button>
+                <span className="text-xs flex items-center">{currentPageYemekler} / {Math.ceil(yemekler.length / itemsPerPage)}</span>
+                <button 
+                  disabled={currentPageYemekler === Math.ceil(yemekler.length / itemsPerPage)} 
+                  onClick={() => setCurrentPageYemekler(prev => prev + 1)}
+                  className="px-3 py-1 bg-gray-100 rounded-lg text-xs disabled:opacity-50"
+                >
+                  İleri
+                </button>
+              </div>
+            )}
           </>
         )}
 
@@ -330,12 +360,49 @@ export default function AdminPanel() {
         {activeTab === 'siparisler' && (
           <>
             <h3 className="text-sm font-bold mb-2">Müşteri Siparişleri</h3>
-            {siparisler.length === 0 ? <p className="text-xs text-gray-500">Henüz sipariş yok.</p> : siparisler.map(s => (
-              <div key={s.id} className="p-2 border-b border-gray-50 text-sm cursor-pointer" onClick={() => setDuzenlenenSiparis(s)}>
-                <p className="font-bold">{s.yemekler ? (typeof s.yemekler === 'string' ? JSON.parse(s.yemekler).join(', ') : s.yemekler.join(', ')) : s.yemekAd}</p>
-                <p className="text-xs text-gray-500">Masa: {s.masaNo} - {s.toplamFiyat} TL - Durum: {s.durum || 'Bekliyor'}</p>
-              </div>
-            ))}
+            {siparisler.length === 0 ? <p className="text-xs text-gray-500">Henüz sipariş yok.</p> : (
+              <>
+                {siparisler.slice((currentPageSiparisler - 1) * itemsPerPage, currentPageSiparisler * itemsPerPage).map(s => (
+                  <div key={s.id} className="p-3 border-b border-gray-100 text-sm cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => setDuzenlenenSiparis(s)}>
+                    <div className="font-bold text-gray-900 mb-1">
+                      {s.yemekler ? (
+                        (typeof s.yemekler === 'string' ? JSON.parse(s.yemekler) : s.yemekler).map((y: string, idx: number) => (
+                          <div key={idx} className="flex items-center gap-2 mb-0.5 last:mb-0">
+                            <span className="inline-flex items-center justify-center bg-green-100 text-green-700 px-1.5 py-0.5 rounded text-[10px] font-black min-w-[24px]">
+                              {y.includes('x ') ? y.split('x ')[0] : '1'}x
+                            </span>
+                            <span className="text-gray-800">{y.includes('x ') ? y.split('x ')[1] : y}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <span className="text-gray-800">{s.yemekAd}</span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500">Masa: {s.masaNo} - <span className="font-semibold text-gray-700">{s.toplamFiyat} TL</span> - Durum: <span className={`font-medium ${s.durum === 'Tamamlandı' ? 'text-green-600' : 'text-orange-600'}`}>{s.durum || 'Bekliyor'}</span></p>
+                  </div>
+                ))}
+                {/* Sipariş Sayfalandırma */}
+                {siparisler.length > itemsPerPage && (
+                  <div className="flex justify-center gap-2 mt-4">
+                    <button 
+                      disabled={currentPageSiparisler === 1} 
+                      onClick={() => setCurrentPageSiparisler(prev => prev - 1)}
+                      className="px-3 py-1 bg-gray-100 rounded-lg text-xs disabled:opacity-50"
+                    >
+                      Geri
+                    </button>
+                    <span className="text-xs flex items-center">{currentPageSiparisler} / {Math.ceil(siparisler.length / itemsPerPage)}</span>
+                    <button 
+                      disabled={currentPageSiparisler === Math.ceil(siparisler.length / itemsPerPage)} 
+                      onClick={() => setCurrentPageSiparisler(prev => prev + 1)}
+                      className="px-3 py-1 bg-gray-100 rounded-lg text-xs disabled:opacity-50"
+                    >
+                      İleri
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
             
             {duzenlenenSiparis && (
               <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -354,13 +421,15 @@ export default function AdminPanel() {
                         <span key={i} className="bg-gray-100 px-2 py-1 rounded text-xs flex items-center gap-1">
                           {y}
                           <button onClick={() => {
-                            const urun = yemekler.find(yemek => yemek.ad === y);
-                            const fiyat = urun ? urun.fiyat : 0;
+                            const quantity = y.includes('x ') ? parseInt(y.split('x ')[0]) : 1;
+                            const itemName = y.includes('x ') ? y.split('x ')[1] : y;
+                            const urun = yemekler.find(yemek => yemek.ad === itemName);
+                            const fiyat = urun ? urun.fiyat * quantity : 0;
                             const mevcutUrunler = typeof duzenlenenSiparis.yemekler === 'string' ? JSON.parse(duzenlenenSiparis.yemekler) : duzenlenenSiparis.yemekler;
                             setDuzenlenenSiparis({
                               ...duzenlenenSiparis,
                               yemekler: mevcutUrunler.filter((_: any, index: number) => index !== i),
-                              toplamFiyat: duzenlenenSiparis.toplamFiyat - fiyat
+                              toplamFiyat: Math.max(0, duzenlenenSiparis.toplamFiyat - fiyat)
                             });
                           }} className="text-red-500">x</button>
                         </span>
@@ -375,7 +444,7 @@ export default function AdminPanel() {
                         const mevcutUrunler = typeof duzenlenenSiparis.yemekler === 'string' ? JSON.parse(duzenlenenSiparis.yemekler) : duzenlenenSiparis.yemekler;
                         setDuzenlenenSiparis({
                           ...duzenlenenSiparis,
-                          yemekler: [...mevcutUrunler, yeniUrunAd],
+                          yemekler: [...mevcutUrunler, `1x ${yeniUrunAd}`],
                           toplamFiyat: duzenlenenSiparis.toplamFiyat + urun.fiyat
                         });
                       }}

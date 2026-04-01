@@ -20,7 +20,7 @@ export default function Menu() {
   const [kategoriler, setKategoriler] = useState<Kategori[]>([]);
   const [yemekler, setYemekler] = useState<any[]>([]);
   const [ayarlar, setAyarlar] = useState<any>({ uygulamaAdi: 'Green Restaurant', logoUrl: '', sistemAcik: 1 });
-  const [cart, setCart] = useState<any[]>([]);
+  const [cart, setCart] = useState<{ [key: string]: { item: any, quantity: number } }>({});
   const [isWaiterModalOpen, setIsWaiterModalOpen] = useState(false);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -82,15 +82,32 @@ export default function Menu() {
     };
   }, []);
 
-  const addToCart = (yemek: any) => {
+  const updateQuantity = (yemek: any, delta: number) => {
     if (yemek.aktif === 0) {
       setNotification(`Üzgünüz, ${yemek.ad} şu anda tükendi.`);
       setTimeout(() => setNotification(null), 2000);
       return;
     }
-    setCart([...cart, yemek]);
-    setNotification(`${yemek.ad} sepete eklendi`);
-    setTimeout(() => setNotification(null), 2000);
+
+    setCart(prev => {
+      const current = prev[yemek.id] || { item: yemek, quantity: 0 };
+      const newQuantity = Math.max(0, current.quantity + delta);
+      
+      if (newQuantity === 0) {
+        const { [yemek.id]: _, ...rest } = prev;
+        return rest;
+      }
+
+      return {
+        ...prev,
+        [yemek.id]: { ...current, quantity: newQuantity }
+      };
+    });
+
+    if (delta > 0) {
+      setNotification(`${yemek.ad} sepete eklendi`);
+      setTimeout(() => setNotification(null), 2000);
+    }
   };
 
   const handleCallWaiter = async (masaNo: string) => {
@@ -110,16 +127,19 @@ export default function Menu() {
 
   const handleOrder = async (masaNo: string) => {
     try {
+      const cartItems = Object.values(cart) as { item: any, quantity: number }[];
+      if (cartItems.length === 0) return;
+
       await fetch('/api/siparisler', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          yemekler: cart.map(y => y.ad),
+          yemekler: cartItems.map(c => `${c.quantity}x ${c.item.ad}`),
           masaNo,
-          toplamFiyat: cart.reduce((sum, y) => sum + Number(y.fiyat), 0),
+          toplamFiyat: cartItems.reduce((sum, c) => sum + (Number(c.item.fiyat) * c.quantity), 0),
         }),
       });
-      setCart([]);
+      setCart({});
       setNotification('Siparişiniz alındı!');
       setTimeout(() => setNotification(null), 3000);
     } catch (error) {
@@ -127,6 +147,8 @@ export default function Menu() {
       alert('Sipariş gönderilemedi.');
     }
   };
+
+  const cartCount = (Object.values(cart) as { quantity: number }[]).reduce((sum, c) => sum + c.quantity, 0);
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950 pb-32 transition-colors duration-300">
@@ -186,29 +208,50 @@ export default function Menu() {
 
               {/* Yemek Listesi */}
               <div className="px-4 space-y-6">
-                {yemekler.filter(y => y.kategori === aktifKategori).map(yemek => (
-                  <div key={yemek.id} className="relative flex flex-row items-center bg-white dark:bg-gray-800 p-4 rounded-3xl shadow-md overflow-hidden h-32">
-                    {/* Sol: Metinler */}
-                    <div className="flex-1 flex flex-col justify-center gap-1 pr-4">
-                      <h3 className="font-bold text-[16px] text-black dark:text-white">{yemek.ad} {yemek.aktif === 0 && <span className="text-red-500 text-xs ml-2">(Tükendi)</span>}</h3>
-                      <p className="text-gray-400 dark:text-gray-400 text-sm line-clamp-2">{yemek.aciklama}</p>
-                      <div className="flex items-center justify-between mt-2">
-                        <span className="bg-green-500 text-white font-bold px-4 py-1 rounded-full text-sm w-fit shadow-md">₺{yemek.fiyat},00</span>
-                        <button onClick={() => addToCart(yemek)} className={`px-3 py-1 rounded-full text-sm font-semibold ${yemek.aktif === 0 ? 'bg-red-100 text-red-600' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white'}`}>+</button>
+                {yemekler.filter(y => y.kategori === aktifKategori).map(yemek => {
+                  const quantity = cart[yemek.id]?.quantity || 0;
+                  return (
+                    <div key={yemek.id} className="relative flex flex-row items-center bg-white dark:bg-gray-800 p-4 rounded-3xl shadow-md overflow-hidden h-32">
+                      {/* Sol: Metinler */}
+                      <div className="flex-1 flex flex-col justify-center gap-1 pr-4">
+                        <h3 className="font-bold text-[16px] text-black dark:text-white">{yemek.ad} {yemek.aktif === 0 && <span className="text-red-500 text-xs ml-2">(Tükendi)</span>}</h3>
+                        <p className="text-gray-400 dark:text-gray-400 text-sm line-clamp-2">{yemek.aciklama}</p>
+                        <div className="flex items-center justify-between mt-2">
+                          <span className="bg-green-500 text-white font-bold px-4 py-1 rounded-full text-sm w-fit shadow-md">₺{yemek.fiyat},00</span>
+                          <div className="flex items-center gap-3 bg-gray-100 dark:bg-gray-700 rounded-full px-2 py-1">
+                            {quantity > 0 && (
+                              <>
+                                <button 
+                                  onClick={() => updateQuantity(yemek, -1)} 
+                                  className="w-6 h-6 flex items-center justify-center rounded-full bg-white dark:bg-gray-600 text-gray-800 dark:text-white font-bold"
+                                >
+                                  -
+                                </button>
+                                <span className="text-sm font-bold dark:text-white">{quantity}</span>
+                              </>
+                            )}
+                            <button 
+                              onClick={() => updateQuantity(yemek, 1)} 
+                              className={`w-6 h-6 flex items-center justify-center rounded-full font-bold ${yemek.aktif === 0 ? 'bg-red-100 text-red-600' : 'bg-green-500 text-white'}`}
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
                       </div>
+                      {/* Sağ: Resim (Oval Kavis Efekti) */}
+                      <img 
+                        src={yemek.resim || 'https://picsum.photos/seed/food/200/200'} 
+                        alt={yemek.ad} 
+                        className="food-card-image"
+                        referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://picsum.photos/seed/food/200/200';
+                        }}
+                      />
                     </div>
-                    {/* Sağ: Resim (Oval Kavis Efekti) */}
-                    <img 
-                      src={yemek.resim || 'https://picsum.photos/seed/food/200/200'} 
-                      alt={yemek.ad} 
-                      className="food-card-image"
-                      referrerPolicy="no-referrer"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = 'https://picsum.photos/seed/food/200/200';
-                      }}
-                    />
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* İşlem Butonları */}
@@ -217,7 +260,7 @@ export default function Menu() {
                   <Bell size={20} /> Garson Çağır
                 </button>
                 <button onClick={() => setIsOrderModalOpen(true)} className="flex-1 bg-green-500 text-white py-3 rounded-full flex items-center justify-center gap-2 font-semibold">
-                  <ShoppingCart size={20} /> Sipariş Ver ({cart.length})
+                  <ShoppingCart size={20} /> Sipariş Ver ({cartCount})
                 </button>
               </div>
             </>
@@ -238,3 +281,4 @@ export default function Menu() {
     </div>
   );
 }
+

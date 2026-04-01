@@ -46,14 +46,8 @@ export default function App() {
           </div>
           <div className="flex gap-2">
             <button 
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="px-4 py-2 bg-gray-200 dark:bg-slate-700 rounded-md"
-            >
-              {theme === 'dark' ? '☀️' : '🌙'}
-            </button>
-            <button 
               onClick={() => setView(view === 'menu' ? 'admin' : 'menu')}
-              className={`px-4 py-2 rounded-md ${theme === 'dark' ? 'bg-orange-500' : 'bg-green-500'} text-white`}
+              className={`px-4 py-2 rounded-md ${theme === 'dark' ? 'bg-orange-500' : 'bg-green-500'} text-white font-medium`}
             >
               {view === 'menu' ? 'Admin' : 'Menü'}
             </button>
