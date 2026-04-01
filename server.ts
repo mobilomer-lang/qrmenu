@@ -6,6 +6,8 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import db from "./src/lib/turso";
 import multer from "multer";
+import { v2 as cloudinary } from 'cloudinary';
+import streamifier from 'streamifier';
 import fs from "fs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -14,14 +16,18 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir);
 }
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));
-  }
+// Cloudinary Yapılandırması
+if (!process.env.CLOUDINARY_CLOUD_NAME) {
+  console.warn("UYARI: CLOUDINARY_CLOUD_NAME tanımlı değil. Resim yükleme çalışmayacaktır.");
+}
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
+
+const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 async function setupDatabase() {
@@ -93,7 +99,20 @@ async function startServer() {
     if (!req.file) {
       return res.status(400).json({ error: 'Dosya yüklenemedi' });
     }
-    res.json({ url: `/uploads/${req.file.filename}` });
+
+    const uploadStream = cloudinary.uploader.upload_stream(
+      { folder: 'qr-menu' },
+      (error, result) => {
+        if (error) {
+          console.error('Cloudinary Upload Error:', error);
+          return res.status(500).json({ error: 'Cloudinary yükleme hatası', details: error.message });
+        }
+        console.log('Cloudinary Upload Success:', result?.secure_url);
+        res.json({ url: result?.secure_url });
+      }
+    );
+
+    streamifier.createReadStream(req.file.buffer).pipe(uploadStream);
   });
 
   // API routes
