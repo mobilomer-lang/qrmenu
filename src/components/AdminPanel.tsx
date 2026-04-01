@@ -28,15 +28,21 @@ export default function AdminPanel() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const handleResimYukle = async (file: File) => {
-    const formData = new FormData();
-    formData.append('image', file);
-    const response = await fetch('/api/upload', {
-      method: 'POST',
-      body: formData,
-    });
-    if (!response.ok) throw new Error('Yükleme başarısız');
-    const data = await response.json();
-    return data.url;
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Yükleme başarısız');
+      return data.url;
+    } catch (error: any) {
+      console.error('Resim yükleme hatası:', error);
+      alert('Resim yüklenemedi: ' + error.message);
+      throw error;
+    }
   };
 
   const [duzenlenenSiparis, setDuzenlenenSiparis] = useState<any>(null);
@@ -255,7 +261,17 @@ export default function AdminPanel() {
               {yemekler.map(y => (
                 <div key={y.id} className="flex justify-between items-center p-2 border-b border-gray-50 text-sm">
                   <div className="flex items-center gap-2">
-                    {y.resim && <img src={y.resim} alt={y.ad} className="w-10 h-10 rounded-lg object-cover" referrerPolicy="no-referrer" />}
+                    {y.resim && (
+                      <img 
+                        src={y.resim} 
+                        alt={y.ad} 
+                        className="w-10 h-10 rounded-lg object-cover" 
+                        referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://picsum.photos/seed/food/100/100';
+                        }}
+                      />
+                    )}
                     <div>
                       <p className="font-medium text-gray-700">{y.ad}</p>
                       <p className="text-xs text-gray-500">{y.fiyat} TL - {y.aktif ? 'Aktif' : 'Pasif'}</p>
