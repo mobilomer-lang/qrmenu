@@ -154,32 +154,6 @@ export default function Menu() {
               border-radius: 20px;
             }
           `}</style>
-          {/* Header */}
-          <header className="flex justify-between items-center p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 flex items-center justify-center overflow-hidden">
-                {ayarlar.logoUrl ? (
-                  <img 
-                    src={ayarlar.logoUrl} 
-                    alt="Logo" 
-                    className="w-full h-full object-contain" 
-                    referrerPolicy="no-referrer" 
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/logo.png';
-                    }}
-                  />
-                ) : (
-                  <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-                    <Utensils className="text-white" size={20} />
-                  </div>
-                )}
-              </div>
-              <h1 className="text-[18px] font-semibold text-black dark:text-white">{ayarlar.uygulamaAdi}</h1>
-            </div>
-            <button onClick={toggleDarkMode} className="w-10 h-10 rounded-full bg-white dark:bg-gray-800 shadow-md flex items-center justify-center">
-              <Globe className="text-gray-500 dark:text-gray-300" size={20} />
-            </button>
-          </header>
 
           {ayarlar.sistemAcik === 0 ? (
             <div className="p-4 text-center text-red-600 dark:text-red-400 font-bold">Restoran şu anda kapalıdır.</div>
@@ -264,4 +238,3 @@ export default function Menu() {
     </div>
   );
 }
-
