@@ -57,6 +57,19 @@ export default function AdminPanel() {
   const itemsPerPage = 10;
   const itemsPerPageEskiCagrilar = 5;
 
+  const safeParseYemekler = (yemekler: any) => {
+    if (!yemekler) return [];
+    if (typeof yemekler === 'string') {
+      try {
+        const parsed = JSON.parse(yemekler);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        return [];
+      }
+    }
+    return Array.isArray(yemekler) ? yemekler : [];
+  };
+
   const handleSiparisDurumGuncelle = async (id: string, durum: string) => {
     await fetch(`/api/siparisler/${id}`, { 
       method: 'PUT', 
@@ -436,7 +449,7 @@ export default function AdminPanel() {
                   <div key={s.id} className="p-3 border-b border-gray-100 dark:border-gray-800 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors" onClick={() => setDuzenlenenSiparis(s)}>
                     <div className="font-bold text-gray-900 dark:text-white mb-1">
                       {s.yemekler ? (
-                        (typeof s.yemekler === 'string' ? JSON.parse(s.yemekler) : s.yemekler).map((y: string, idx: number) => (
+                        safeParseYemekler(s.yemekler).map((y: string, idx: number) => (
                           <div key={idx} className="flex items-center gap-2 mb-0.5 last:mb-0">
                             <span className="inline-flex items-center justify-center bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded text-[10px] font-black min-w-[24px]">
                               {y.includes('x ') ? y.split('x ')[0] : '1'}x
@@ -487,7 +500,7 @@ export default function AdminPanel() {
                     <div className="mb-2">
                       <p className="text-xs font-bold mb-1 dark:text-white">Ürünler:</p>
                       <div className="flex flex-wrap gap-1 mb-2">
-                        {(typeof duzenlenenSiparis.yemekler === 'string' ? JSON.parse(duzenlenenSiparis.yemekler) : duzenlenenSiparis.yemekler).map((y: string, i: number) => (
+                        {safeParseYemekler(duzenlenenSiparis.yemekler).map((y: string, i: number) => (
                           <span key={i} className="bg-gray-100 dark:bg-gray-800 dark:text-gray-200 px-2 py-1 rounded text-xs flex items-center gap-1">
                             {y}
                             <button onClick={() => {
@@ -495,7 +508,7 @@ export default function AdminPanel() {
                               const itemName = y.includes('x ') ? y.split('x ')[1] : y;
                               const urun = yemekler.find(yemek => yemek.ad === itemName);
                               const fiyat = urun ? urun.fiyat * quantity : 0;
-                              const mevcutUrunler = typeof duzenlenenSiparis.yemekler === 'string' ? JSON.parse(duzenlenenSiparis.yemekler) : duzenlenenSiparis.yemekler;
+                              const mevcutUrunler = safeParseYemekler(duzenlenenSiparis.yemekler);
                               setDuzenlenenSiparis({
                                 ...duzenlenenSiparis,
                                 yemekler: mevcutUrunler.filter((_: any, index: number) => index !== i),
@@ -520,7 +533,7 @@ export default function AdminPanel() {
                             if (!yeniUrunAd) return;
                             const urun = yemekler.find(y => y.ad === yeniUrunAd);
                             if (!urun) return;
-                            const mevcutUrunler = typeof duzenlenenSiparis.yemekler === 'string' ? JSON.parse(duzenlenenSiparis.yemekler) : duzenlenenSiparis.yemekler;
+                            const mevcutUrunler = safeParseYemekler(duzenlenenSiparis.yemekler);
                             setDuzenlenenSiparis({
                               ...duzenlenenSiparis,
                               yemekler: [...mevcutUrunler, `${eklenecekAdet}x ${yeniUrunAd}`],
