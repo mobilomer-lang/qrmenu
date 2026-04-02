@@ -82,8 +82,28 @@ export default function Menu() {
     };
   }, []);
 
+  const setQuantityDirectly = (yemek: any, newQuantity: number) => {
+    if (yemek.stokta === 0 && newQuantity > 0) {
+      setNotification(`Üzgünüz, ${yemek.ad} şu anda tükendi.`);
+      setTimeout(() => setNotification(null), 2000);
+      return;
+    }
+
+    setCart(prev => {
+      if (newQuantity <= 0) {
+        const { [yemek.id]: _, ...rest } = prev;
+        return rest;
+      }
+
+      return {
+        ...prev,
+        [yemek.id]: { item: yemek, quantity: newQuantity }
+      };
+    });
+  };
+
   const updateQuantity = (yemek: any, delta: number) => {
-    if (yemek.aktif === 0) {
+    if (yemek.stokta === 0 && delta > 0) {
       setNotification(`Üzgünüz, ${yemek.ad} şu anda tükendi.`);
       setTimeout(() => setNotification(null), 2000);
       return;
@@ -175,6 +195,14 @@ export default function Menu() {
               object-fit: cover;
               border-radius: 20px;
             }
+            input[type=number]::-webkit-inner-spin-button, 
+            input[type=number]::-webkit-outer-spin-button { 
+              -webkit-appearance: none; 
+              margin: 0; 
+            }
+            input[type=number] {
+              -moz-appearance: textfield;
+            }
           `}</style>
 
           {ayarlar.sistemAcik === 0 ? (
@@ -208,31 +236,39 @@ export default function Menu() {
 
               {/* Yemek Listesi */}
               <div className="px-4 space-y-6">
-                {yemekler.filter(y => y.kategori === aktifKategori).map(yemek => {
+                {yemekler.filter(y => y.kategori === aktifKategori && y.aktif === 1).map(yemek => {
                   const quantity = cart[yemek.id]?.quantity || 0;
                   return (
                     <div key={yemek.id} className="relative flex flex-row items-center bg-white dark:bg-gray-800 p-4 rounded-3xl shadow-md overflow-hidden h-32">
                       {/* Sol: Metinler */}
                       <div className="flex-1 flex flex-col justify-center gap-1 pr-4">
-                        <h3 className="font-bold text-[16px] text-black dark:text-white">{yemek.ad} {yemek.aktif === 0 && <span className="text-red-500 text-xs ml-2">(Tükendi)</span>}</h3>
+                        <h3 className="font-bold text-[16px] text-black dark:text-white">{yemek.ad} {yemek.stokta === 0 && <span className="text-red-500 text-xs ml-2">(Tükendi)</span>}</h3>
                         <p className="text-gray-400 dark:text-gray-400 text-sm line-clamp-2">{yemek.aciklama}</p>
                         <div className="flex items-center justify-between mt-2">
                           <span className="bg-green-500 text-white font-bold px-4 py-1 rounded-full text-sm w-fit shadow-md">₺{yemek.fiyat},00</span>
                           <div className="flex items-center gap-3 bg-gray-100 dark:bg-gray-700 rounded-full px-2 py-1">
-                            {quantity > 0 && (
-                              <>
-                                <button 
-                                  onClick={() => updateQuantity(yemek, -1)} 
-                                  className="w-6 h-6 flex items-center justify-center rounded-full bg-white dark:bg-gray-600 text-gray-800 dark:text-white font-bold"
-                                >
-                                  -
-                                </button>
-                                <span className="text-sm font-bold dark:text-white">{quantity}</span>
-                              </>
-                            )}
+                            <button 
+                              onClick={() => updateQuantity(yemek, -1)} 
+                              className="w-6 h-6 flex items-center justify-center rounded-full bg-white dark:bg-gray-600 text-gray-800 dark:text-white font-bold"
+                            >
+                              -
+                            </button>
+                            <input 
+                              type="number"
+                              min="0"
+                              value={quantity}
+                              onChange={(e) => {
+                                const val = parseInt(e.target.value);
+                                if (!isNaN(val)) {
+                                  setQuantityDirectly(yemek, val);
+                                }
+                              }}
+                              onFocus={(e) => e.target.select()}
+                              className="w-10 text-center bg-white dark:bg-gray-600 rounded-md text-sm font-bold dark:text-white focus:outline-none border border-gray-200 dark:border-gray-500"
+                            />
                             <button 
                               onClick={() => updateQuantity(yemek, 1)} 
-                              className={`w-6 h-6 flex items-center justify-center rounded-full font-bold ${yemek.aktif === 0 ? 'bg-red-100 text-red-600' : 'bg-green-500 text-white'}`}
+                              className={`w-6 h-6 flex items-center justify-center rounded-full font-bold ${yemek.stokta === 0 ? 'bg-red-100 text-red-600' : 'bg-green-500 text-white'}`}
                             >
                               +
                             </button>
@@ -281,3 +317,4 @@ export default function Menu() {
     </div>
   );
 }
+

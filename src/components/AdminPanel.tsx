@@ -24,6 +24,7 @@ export default function AdminPanel() {
   const [yeniYemekResimFile, setYeniYemekResimFile] = useState<File | null>(null);
   const [yeniYemekKategori, setYeniYemekKategori] = useState('');
   const [yeniYemekAktif, setYeniYemekAktif] = useState(true);
+  const [yeniYemekStokta, setYeniYemekStokta] = useState(true);
   const [duzenlenenYemek, setDuzenlenenYemek] = useState<any>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -48,10 +49,14 @@ export default function AdminPanel() {
   const [duzenlenenSiparis, setDuzenlenenSiparis] = useState<any>(null);
   const [siparisler, setSiparisler] = useState<any[]>([]);
   const [cagrilar, setCagrilar] = useState<any[]>([]);
+  const [tamamlananCagrilar, setTamamlananCagrilar] = useState<any[]>([]);
+  const [eklenecekAdet, setEklenecekAdet] = useState(1);
 
   const [currentPageYemekler, setCurrentPageYemekler] = useState(1);
   const [currentPageSiparisler, setCurrentPageSiparisler] = useState(1);
+  const [currentPageEskiCagrilar, setCurrentPageEskiCagrilar] = useState(1);
   const itemsPerPage = 10;
+  const itemsPerPageEskiCagrilar = 5;
 
   const handleSiparisDurumGuncelle = async (id: string, durum: string) => {
     await fetch(`/api/siparisler/${id}`, { 
@@ -60,21 +65,25 @@ export default function AdminPanel() {
       headers: { 'Content-Type': 'application/json' } 
     });
     fetchData();
+    setSuccessMessage('Sipariş durumu güncellendi!');
+    setTimeout(() => setSuccessMessage(null), 3000);
   };
 
   const fetchData = async () => {
     try {
-      const [katRes, yemekRes, sipRes, cagriRes, ayarlarRes] = await Promise.all([
+      const [katRes, yemekRes, sipRes, cagriRes, ayarlarRes, tamamlananCagriRes] = await Promise.all([
         fetch('/api/kategoriler').then(r => r.json()),
         fetch('/api/yemekler').then(r => r.json()),
         fetch('/api/siparisler').then(r => r.json()),
         fetch('/api/cagrilar').then(r => r.json()),
         fetch('/api/ayarlar').then(r => r.json()),
+        fetch('/api/cagrilar/tamamlanan').then(r => r.json()),
       ]);
       setKategoriler(katRes);
       setYemekler(yemekRes);
       setSiparisler(sipRes);
       setCagrilar(cagriRes);
+      setTamamlananCagrilar(tamamlananCagriRes);
       setAyarlar(ayarlarRes);
     } catch (error) {
       console.error('Veri çekme hatası:', error);
@@ -94,6 +103,8 @@ export default function AdminPanel() {
   const handleTamamla = async (id: string) => {
     await fetch(`/api/cagrilar/${id}`, { method: 'PUT', body: JSON.stringify({ durum: 'Tamamlandı' }), headers: { 'Content-Type': 'application/json' } });
     fetchData();
+    setSuccessMessage('Çağrı tamamlandı!');
+    setTimeout(() => setSuccessMessage(null), 3000);
   };
 
   const handleKategoriKaydet = async () => {
@@ -104,13 +115,16 @@ export default function AdminPanel() {
         body: JSON.stringify({ ad: yeniKategoriAd, iconName: yeniKategoriIcon, sira: Number(yeniKategoriSira) }),
       });
       setDuzenlenenKategori(null);
+      setSuccessMessage('Kategori güncellendi!');
     } else if (yeniKategoriAd) {
       await fetch('/api/kategoriler', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ad: yeniKategoriAd, iconName: yeniKategoriIcon, sira: Number(yeniKategoriSira) }),
       });
+      setSuccessMessage('Kategori eklendi!');
     }
+    setTimeout(() => setSuccessMessage(null), 3000);
     setYeniKategoriAd('');
     setYeniKategoriIcon('Utensils');
     setYeniKategoriSira(0);
@@ -139,14 +153,14 @@ export default function AdminPanel() {
       await fetch(`/api/yemekler/${duzenlenenYemek.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ad: yeniYemekAd, fiyat: Number(yeniYemekFiyat), aciklama: yeniYemekAciklama, resim: resimUrl, kategori: yeniYemekKategori, aktif: yeniYemekAktif }),
+        body: JSON.stringify({ ad: yeniYemekAd, fiyat: Number(yeniYemekFiyat), aciklama: yeniYemekAciklama, resim: resimUrl, kategori: yeniYemekKategori, aktif: yeniYemekAktif, stokta: yeniYemekStokta }),
       });
       setDuzenlenenYemek(null);
     } else if (yeniYemekAd) {
       await fetch('/api/yemekler', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ad: yeniYemekAd, fiyat: Number(yeniYemekFiyat), aciklama: yeniYemekAciklama, resim: resimUrl, kategori: yeniYemekKategori, aktif: yeniYemekAktif }),
+        body: JSON.stringify({ ad: yeniYemekAd, fiyat: Number(yeniYemekFiyat), aciklama: yeniYemekAciklama, resim: resimUrl, kategori: yeniYemekKategori, aktif: yeniYemekAktif, stokta: yeniYemekStokta }),
       });
     }
     setYeniYemekAd('');
@@ -156,6 +170,7 @@ export default function AdminPanel() {
     setYeniYemekResimFile(null);
     setYeniYemekKategori('');
     setYeniYemekAktif(true);
+    setYeniYemekStokta(true);
     fetchData();
     setSuccessMessage('İşlem tamamlandı!');
     setTimeout(() => setSuccessMessage(null), 3000);
@@ -173,13 +188,33 @@ export default function AdminPanel() {
     setYeniYemekAciklama(y.aciklama);
     setYeniYemekResim(y.resim);
     setYeniYemekKategori(y.kategori);
-    setYeniYemekAktif(y.aktif);
+    setYeniYemekAktif(!!y.aktif);
+    setYeniYemekStokta(!!y.stokta);
   };
 
   const handleYemekToggle = async (y: any) => {
     await fetch(`/api/yemekler/${y.id}`, { method: 'PUT', body: JSON.stringify({ aktif: !y.aktif }), headers: { 'Content-Type': 'application/json' } });
     fetchData();
   };
+
+  const handleStokToggle = async (y: any) => {
+    await fetch(`/api/yemekler/${y.id}`, { method: 'PUT', body: JSON.stringify({ stokta: !y.stokta }), headers: { 'Content-Type': 'application/json' } });
+    fetchData();
+  };
+
+  const Toggle = ({ enabled, onChange, label }: { enabled: boolean, onChange: () => void, label: string }) => (
+    <div className="flex items-center justify-between gap-2 w-full">
+      <span className="text-[10px] font-bold text-gray-500 uppercase">{label}</span>
+      <button
+        onClick={(e) => { e.stopPropagation(); onChange(); }}
+        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${enabled ? 'bg-green-500' : 'bg-gray-300'}`}
+      >
+        <span
+          className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${enabled ? 'translate-x-5' : 'translate-x-1'}`}
+        />
+      </button>
+    </div>
+  );
 
   const menuItems = [
     { name: 'Yemekler', desc: 'Menüleri Yönet', icon: Utensils, tab: 'yemekler' },
@@ -213,16 +248,58 @@ export default function AdminPanel() {
       
       {/* Garson Çağrıları - Her zaman görünür */}
       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-4 w-full">
-        <h3 className="text-sm font-bold mb-3 flex items-center gap-2 text-red-600">
-          <Bell size={16} /> Bekleyen Çağrılar ({cagrilar.length})
-        </h3>
-        <div className="space-y-2">
-          {cagrilar.map((cagri) => (
-            <div key={cagri.id} className="p-3 border-b border-gray-50 flex justify-between items-center text-sm">
-              <span className="font-medium text-gray-700">Masa: {cagri.masaNo}</span>
-              <button onClick={() => handleTamamla(cagri.id)} className="bg-green-500 text-white px-3 py-1.5 rounded-lg text-xs">Tamamla</button>
+        <div className="flex gap-4 border-b border-gray-100 mb-3">
+          <button 
+            onClick={() => setActiveTab('yemekler')} // Reset to some tab if needed, but let's just use local state for calls
+            className={`pb-2 text-sm font-bold flex items-center gap-2 ${activeTab !== 'ayarlar' ? 'text-red-600 border-b-2 border-red-600' : 'text-gray-400'}`}
+          >
+            <Bell size={16} /> Bekleyen Çağrılar ({cagrilar.length})
+          </button>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="border-r border-gray-100 pr-4">
+            <h4 className="text-xs font-bold text-gray-500 mb-2 uppercase">Bekleyenler</h4>
+            <div className="space-y-2">
+              {cagrilar.length === 0 ? <p className="text-xs text-gray-400 italic">Bekleyen çağrı yok.</p> : cagrilar.map((cagri) => (
+                <div key={cagri.id} className="p-2 bg-red-50 rounded-lg flex justify-between items-center text-sm">
+                  <span className="font-medium text-red-700">Masa: {cagri.masaNo}</span>
+                  <button onClick={() => handleTamamla(cagri.id)} className="bg-green-500 text-white px-2 py-1 rounded text-[10px] font-bold">Tamamla</button>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
+          <div>
+            <h4 className="text-xs font-bold text-gray-500 mb-2 uppercase">Eski Çağrılar</h4>
+            <div className="space-y-2">
+              {tamamlananCagrilar.length === 0 ? <p className="text-xs text-gray-400 italic">Eski çağrı yok.</p> : tamamlananCagrilar.slice((currentPageEskiCagrilar - 1) * itemsPerPageEskiCagrilar, currentPageEskiCagrilar * itemsPerPageEskiCagrilar).map((cagri) => (
+                <div key={cagri.id} className="p-2 bg-gray-50 rounded-lg flex justify-between items-center text-sm">
+                  <span className="text-gray-600">Masa: {cagri.masaNo}</span>
+                  <span className="text-[10px] text-gray-400">{new Date(cagri.olusturuldu).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                </div>
+              ))}
+            </div>
+            {/* Eski Çağrılar Sayfalandırma */}
+            {tamamlananCagrilar.length > itemsPerPageEskiCagrilar && (
+              <div className="flex justify-center gap-1 mt-2">
+                <button 
+                  disabled={currentPageEskiCagrilar === 1} 
+                  onClick={() => setCurrentPageEskiCagrilar(prev => prev - 1)}
+                  className="px-2 py-0.5 bg-gray-100 rounded text-[10px] disabled:opacity-50"
+                >
+                  &lt;
+                </button>
+                <span className="text-[10px] flex items-center">{currentPageEskiCagrilar} / {Math.ceil(tamamlananCagrilar.length / itemsPerPageEskiCagrilar)}</span>
+                <button 
+                  disabled={currentPageEskiCagrilar === Math.ceil(tamamlananCagrilar.length / itemsPerPageEskiCagrilar)} 
+                  onClick={() => setCurrentPageEskiCagrilar(prev => prev + 1)}
+                  className="px-2 py-0.5 bg-gray-100 rounded text-[10px] disabled:opacity-50"
+                >
+                  &gt;
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -253,10 +330,16 @@ export default function AdminPanel() {
                 <option value="">Kategori Seç</option>
                 {kategoriler.map(k => <option key={k.id} value={k.ad}>{k.ad}</option>)}
               </select>
-              <label className="flex items-center gap-2 text-sm text-gray-900 dark:text-white">
-                <input type="checkbox" checked={yeniYemekAktif} onChange={e => setYeniYemekAktif(e.target.checked)} />
-                Aktif
-              </label>
+              <div className="flex gap-4 mb-2">
+                <label className="flex items-center gap-2 text-sm text-gray-900 dark:text-white">
+                  <input type="checkbox" checked={yeniYemekAktif} onChange={e => setYeniYemekAktif(e.target.checked)} />
+                  Aktif
+                </label>
+                <label className="flex items-center gap-2 text-sm text-gray-900 dark:text-white">
+                  <input type="checkbox" checked={yeniYemekStokta} onChange={e => setYeniYemekStokta(e.target.checked)} />
+                  Stokta Var
+                </label>
+              </div>
               <button onClick={handleYemekKaydet} className="bg-green-600 text-white px-3 py-2 rounded-lg w-full text-sm">
                 {duzenlenenYemek ? 'Güncelle' : 'Ekle'}
               </button>
@@ -281,17 +364,17 @@ export default function AdminPanel() {
                       <p className="text-xs text-gray-500">{y.fiyat} TL - {y.aktif ? 'Açık' : 'Kapalı'}</p>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <button 
-                      onClick={() => handleYemekToggle(y)} 
-                      className={`px-3 py-1 rounded-lg text-xs font-bold ${y.aktif ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}
-                    >
-                      {y.aktif ? 'Kapat' : 'Aç'}
-                    </button>
-                    <button onClick={() => handleYemekDuzenle(y)} className="text-blue-500" title="Düzenle">
-                      <Pencil size={16} />
-                    </button>
-                    <button onClick={() => handleYemekSil(y.id)} className="text-red-500"><Trash2 size={16} /></button>
+                  <div className="flex items-center gap-4">
+                    <div className="flex flex-col gap-1 min-w-[80px]">
+                      <Toggle enabled={!!y.aktif} onChange={() => handleYemekToggle(y)} label="Aktif" />
+                      <Toggle enabled={!!y.stokta} onChange={() => handleStokToggle(y)} label="Stok" />
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => handleYemekDuzenle(y)} className="text-blue-500" title="Düzenle">
+                        <Pencil size={16} />
+                      </button>
+                      <button onClick={() => handleYemekSil(y.id)} className="text-red-500"><Trash2 size={16} /></button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -414,53 +497,66 @@ export default function AdminPanel() {
                     className="border border-gray-200 dark:border-gray-700 p-2 rounded w-full mb-2 bg-white dark:bg-gray-800 dark:text-white" 
                     placeholder="Masa No" 
                   />
-                  <div className="mb-2">
-                    <p className="text-xs font-bold mb-1 dark:text-white">Ürünler:</p>
-                    <div className="flex flex-wrap gap-1 mb-2">
-                      {(typeof duzenlenenSiparis.yemekler === 'string' ? JSON.parse(duzenlenenSiparis.yemekler) : duzenlenenSiparis.yemekler).map((y: string, i: number) => (
-                        <span key={i} className="bg-gray-100 px-2 py-1 rounded text-xs flex items-center gap-1">
-                          {y}
-                          <button onClick={() => {
-                            const quantity = y.includes('x ') ? parseInt(y.split('x ')[0]) : 1;
-                            const itemName = y.includes('x ') ? y.split('x ')[1] : y;
-                            const urun = yemekler.find(yemek => yemek.ad === itemName);
-                            const fiyat = urun ? urun.fiyat * quantity : 0;
+                    <div className="mb-2">
+                      <p className="text-xs font-bold mb-1 dark:text-white">Ürünler:</p>
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        {(typeof duzenlenenSiparis.yemekler === 'string' ? JSON.parse(duzenlenenSiparis.yemekler) : duzenlenenSiparis.yemekler).map((y: string, i: number) => (
+                          <span key={i} className="bg-gray-100 px-2 py-1 rounded text-xs flex items-center gap-1">
+                            {y}
+                            <button onClick={() => {
+                              const quantity = y.includes('x ') ? parseInt(y.split('x ')[0]) : 1;
+                              const itemName = y.includes('x ') ? y.split('x ')[1] : y;
+                              const urun = yemekler.find(yemek => yemek.ad === itemName);
+                              const fiyat = urun ? urun.fiyat * quantity : 0;
+                              const mevcutUrunler = typeof duzenlenenSiparis.yemekler === 'string' ? JSON.parse(duzenlenenSiparis.yemekler) : duzenlenenSiparis.yemekler;
+                              setDuzenlenenSiparis({
+                                ...duzenlenenSiparis,
+                                yemekler: mevcutUrunler.filter((_: any, index: number) => index !== i),
+                                toplamFiyat: Math.max(0, duzenlenenSiparis.toplamFiyat - fiyat)
+                              });
+                            }} className="text-red-500">x</button>
+                          </span>
+                        ))}
+                      </div>
+                      <div className="flex gap-2">
+                        <input 
+                          type="number" 
+                          min="1" 
+                          value={eklenecekAdet} 
+                          onChange={e => setEklenecekAdet(Math.max(1, parseInt(e.target.value) || 1))} 
+                          className="border p-2 rounded w-16 text-sm"
+                          placeholder="Adet"
+                        />
+                        <select 
+                          onChange={e => {
+                            const yeniUrunAd = e.target.value;
+                            if (!yeniUrunAd) return;
+                            const urun = yemekler.find(y => y.ad === yeniUrunAd);
+                            if (!urun) return;
                             const mevcutUrunler = typeof duzenlenenSiparis.yemekler === 'string' ? JSON.parse(duzenlenenSiparis.yemekler) : duzenlenenSiparis.yemekler;
                             setDuzenlenenSiparis({
                               ...duzenlenenSiparis,
-                              yemekler: mevcutUrunler.filter((_: any, index: number) => index !== i),
-                              toplamFiyat: Math.max(0, duzenlenenSiparis.toplamFiyat - fiyat)
+                              yemekler: [...mevcutUrunler, `${eklenecekAdet}x ${yeniUrunAd}`],
+                              toplamFiyat: duzenlenenSiparis.toplamFiyat + (urun.fiyat * eklenecekAdet)
                             });
-                          }} className="text-red-500">x</button>
-                        </span>
-                      ))}
+                            setEklenecekAdet(1);
+                            e.target.value = "";
+                          }}
+                          className="border p-2 rounded flex-1 text-sm"
+                        >
+                          <option value="">Ürün Ekle</option>
+                          {yemekler.map(y => <option key={y.id} value={y.ad}>{y.ad}</option>)}
+                        </select>
+                      </div>
                     </div>
-                    <select 
-                      onChange={e => {
-                        const yeniUrunAd = e.target.value;
-                        if (!yeniUrunAd) return;
-                        const urun = yemekler.find(y => y.ad === yeniUrunAd);
-                        if (!urun) return;
-                        const mevcutUrunler = typeof duzenlenenSiparis.yemekler === 'string' ? JSON.parse(duzenlenenSiparis.yemekler) : duzenlenenSiparis.yemekler;
-                        setDuzenlenenSiparis({
-                          ...duzenlenenSiparis,
-                          yemekler: [...mevcutUrunler, `1x ${yeniUrunAd}`],
-                          toplamFiyat: duzenlenenSiparis.toplamFiyat + urun.fiyat
-                        });
-                      }}
-                      className="border p-2 rounded w-full text-sm"
-                    >
-                      <option value="">Ürün Ekle</option>
-                      {yemekler.map(y => <option key={y.id} value={y.ad}>{y.ad}</option>)}
-                    </select>
-                  </div>
-                  <input 
-                    type="number"
-                    value={duzenlenenSiparis.toplamFiyat} 
-                    onChange={e => setDuzenlenenSiparis({...duzenlenenSiparis, toplamFiyat: Number(e.target.value)})} 
-                    className="border border-gray-200 dark:border-gray-700 p-2 rounded w-full mb-2 bg-white dark:bg-gray-800 dark:text-white" 
-                    placeholder="Toplam Fiyat" 
-                  />
+                    <p className="text-xs font-bold mb-1 dark:text-white">Masa Hesabı</p>
+                    <input 
+                      type="number"
+                      value={duzenlenenSiparis.toplamFiyat} 
+                      onChange={e => setDuzenlenenSiparis({...duzenlenenSiparis, toplamFiyat: Number(e.target.value)})} 
+                      className="border border-gray-200 dark:border-gray-700 p-2 rounded w-full mb-2 bg-white dark:bg-gray-800 dark:text-white" 
+                      placeholder="Masa Hesabı" 
+                    />
                   <div className="flex gap-2 mt-4">
                     <button onClick={async () => { 
                         await fetch(`/api/siparisler/${duzenlenenSiparis.id}`, { 

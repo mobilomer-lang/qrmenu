@@ -248,7 +248,11 @@ async function startServer() {
 
   app.get("/api/cagrilar", async (req, res) => {
     const result = await db.execute("SELECT * FROM garsonCagrilar WHERE durum = 'Bekliyor' ORDER BY olusturuldu DESC");
-    console.log('Çağrılar:', result.rows);
+    res.json(result.rows);
+  });
+
+  app.get("/api/cagrilar/tamamlanan", async (req, res) => {
+    const result = await db.execute("SELECT * FROM garsonCagrilar WHERE durum = 'Tamamlandı' ORDER BY olusturuldu DESC");
     res.json(result.rows);
   });
 
