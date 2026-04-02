@@ -24,7 +24,6 @@ export default function AdminPanel() {
   const [yeniYemekResimFile, setYeniYemekResimFile] = useState<File | null>(null);
   const [yeniYemekKategori, setYeniYemekKategori] = useState('');
   const [yeniYemekAktif, setYeniYemekAktif] = useState(true);
-  const [yeniYemekStokta, setYeniYemekStokta] = useState(true);
   const [duzenlenenYemek, setDuzenlenenYemek] = useState<any>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -153,14 +152,14 @@ export default function AdminPanel() {
       await fetch(`/api/yemekler/${duzenlenenYemek.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ad: yeniYemekAd, fiyat: Number(yeniYemekFiyat), aciklama: yeniYemekAciklama, resim: resimUrl, kategori: yeniYemekKategori, aktif: yeniYemekAktif, stokta: yeniYemekStokta }),
+        body: JSON.stringify({ ad: yeniYemekAd, fiyat: Number(yeniYemekFiyat), aciklama: yeniYemekAciklama, resim: resimUrl, kategori: yeniYemekKategori, aktif: yeniYemekAktif }),
       });
       setDuzenlenenYemek(null);
     } else if (yeniYemekAd) {
       await fetch('/api/yemekler', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ad: yeniYemekAd, fiyat: Number(yeniYemekFiyat), aciklama: yeniYemekAciklama, resim: resimUrl, kategori: yeniYemekKategori, aktif: yeniYemekAktif, stokta: yeniYemekStokta }),
+        body: JSON.stringify({ ad: yeniYemekAd, fiyat: Number(yeniYemekFiyat), aciklama: yeniYemekAciklama, resim: resimUrl, kategori: yeniYemekKategori, aktif: yeniYemekAktif }),
       });
     }
     setYeniYemekAd('');
@@ -170,7 +169,6 @@ export default function AdminPanel() {
     setYeniYemekResimFile(null);
     setYeniYemekKategori('');
     setYeniYemekAktif(true);
-    setYeniYemekStokta(true);
     fetchData();
     setSuccessMessage('İşlem tamamlandı!');
     setTimeout(() => setSuccessMessage(null), 3000);
@@ -189,16 +187,10 @@ export default function AdminPanel() {
     setYeniYemekResim(y.resim);
     setYeniYemekKategori(y.kategori);
     setYeniYemekAktif(!!y.aktif);
-    setYeniYemekStokta(!!y.stokta);
   };
 
   const handleYemekToggle = async (y: any) => {
     await fetch(`/api/yemekler/${y.id}`, { method: 'PUT', body: JSON.stringify({ aktif: !y.aktif }), headers: { 'Content-Type': 'application/json' } });
-    fetchData();
-  };
-
-  const handleStokToggle = async (y: any) => {
-    await fetch(`/api/yemekler/${y.id}`, { method: 'PUT', body: JSON.stringify({ stokta: !y.stokta }), headers: { 'Content-Type': 'application/json' } });
     fetchData();
   };
 
@@ -335,10 +327,6 @@ export default function AdminPanel() {
                   <input type="checkbox" checked={yeniYemekAktif} onChange={e => setYeniYemekAktif(e.target.checked)} />
                   Aktif
                 </label>
-                <label className="flex items-center gap-2 text-sm text-gray-900 dark:text-white">
-                  <input type="checkbox" checked={yeniYemekStokta} onChange={e => setYeniYemekStokta(e.target.checked)} />
-                  Stokta Var
-                </label>
               </div>
               <button onClick={handleYemekKaydet} className="bg-green-600 text-white px-3 py-2 rounded-lg w-full text-sm">
                 {duzenlenenYemek ? 'Güncelle' : 'Ekle'}
@@ -367,7 +355,6 @@ export default function AdminPanel() {
                   <div className="flex items-center gap-4">
                     <div className="flex flex-col gap-1 min-w-[80px]">
                       <Toggle enabled={!!y.aktif} onChange={() => handleYemekToggle(y)} label="Aktif" />
-                      <Toggle enabled={!!y.stokta} onChange={() => handleStokToggle(y)} label="Stok" />
                     </div>
                     <div className="flex gap-2">
                       <button onClick={() => handleYemekDuzenle(y)} className="text-blue-500" title="Düzenle">
