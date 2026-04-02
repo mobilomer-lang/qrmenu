@@ -10,8 +10,26 @@ import { Utensils } from 'lucide-react';
 
 export default function App() {
   const [view, setView] = useState<'menu' | 'admin'>('menu');
-  const [theme, setTheme] = useState<'dark' | 'light'>('light');
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => 
+    window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  );
   const [ayarlar, setAyarlar] = useState<any>({ uygulamaAdi: 'Yükleniyor...', logoUrl: '' });
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = (e: MediaQueryListEvent) => {
+      setTheme(e.matches ? 'dark' : 'light');
+    };
+    mediaQuery.addEventListener('change', handleChange);
+    
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, [theme]);
 
   useEffect(() => {
     fetch('/api/ayarlar')
@@ -54,7 +72,7 @@ export default function App() {
           </div>
         </nav>
         <main>
-          {view === 'menu' ? <Menu theme={theme} /> : <AdminPanel />}
+          {view === 'menu' ? <Menu /> : <AdminPanel />}
         </main>
       </div>
     </div>
