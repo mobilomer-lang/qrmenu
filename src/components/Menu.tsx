@@ -109,7 +109,7 @@ export default function Menu() {
         body: JSON.stringify({ masaNo }),
       });
       setNotification('Birazdan garson yanınızda');
-      setTimeout(() => setNotification(null), 3000);
+      setTimeout(() => setNotification(null), 2000);
     } catch (error) {
       console.error('Hata:', error);
       alert('Çağrı gönderilemedi.');
@@ -132,7 +132,7 @@ export default function Menu() {
       });
       setCart({});
       setNotification('Siparişiniz alındı!');
-      setTimeout(() => setNotification(null), 3000);
+      setTimeout(() => setNotification(null), 2000);
     } catch (error) {
       console.error('Hata:', error);
       alert('Sipariş gönderilemedi.');
@@ -153,8 +153,11 @@ export default function Menu() {
       ) : (
         <>
           {notification && (
-            <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-              <div className="bg-green-500 text-white p-6 rounded-2xl shadow-2xl text-center font-bold text-lg animate-bounce">
+            <div className="fixed inset-0 flex items-center justify-center z-50 p-4 pointer-events-none">
+              <div 
+                className="bg-green-500 text-white p-6 rounded-2xl shadow-2xl text-center font-bold text-lg animate-bounce"
+                style={{ animationIterationCount: 2 }}
+              >
                 {notification}
               </div>
             </div>
