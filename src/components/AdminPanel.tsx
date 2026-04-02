@@ -196,10 +196,10 @@ export default function AdminPanel() {
 
   const Toggle = ({ enabled, onChange, label }: { enabled: boolean, onChange: () => void, label: string }) => (
     <div className="flex items-center justify-between gap-2 w-full">
-      <span className="text-[10px] font-bold text-gray-500 uppercase">{label}</span>
+      <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase">{label}</span>
       <button
         onClick={(e) => { e.stopPropagation(); onChange(); }}
-        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${enabled ? 'bg-green-500' : 'bg-gray-300'}`}
+        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${enabled ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-700'}`}
       >
         <span
           className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${enabled ? 'translate-x-5' : 'translate-x-1'}`}
@@ -229,45 +229,45 @@ export default function AdminPanel() {
   };
 
   return (
-    <div className="p-3 bg-gray-50 min-h-screen w-full overflow-x-hidden">
-      <h2 className="text-xl font-bold mb-4 text-gray-900">Süper Admin Paneli</h2>
+    <div className="p-3 bg-gray-50 dark:bg-gray-950 min-h-screen w-full overflow-x-hidden transition-colors duration-300">
+      <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Süper Admin Paneli</h2>
       
       {successMessage && (
-        <div className="bg-green-100 text-green-800 p-3 rounded-lg mb-4 text-sm font-medium">
+        <div className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 p-3 rounded-lg mb-4 text-sm font-medium">
           {successMessage}
         </div>
       )}
       
       {/* Garson Çağrıları - Her zaman görünür */}
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-4 w-full">
-        <div className="flex gap-4 border-b border-gray-100 mb-3">
+      <div className="bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 mb-4 w-full">
+        <div className="flex gap-4 border-b border-gray-100 dark:border-gray-800 mb-3">
           <button 
             onClick={() => setActiveTab('yemekler')} // Reset to some tab if needed, but let's just use local state for calls
-            className={`pb-2 text-sm font-bold flex items-center gap-2 ${activeTab !== 'ayarlar' ? 'text-red-600 border-b-2 border-red-600' : 'text-gray-400'}`}
+            className={`pb-2 text-sm font-bold flex items-center gap-2 ${activeTab !== 'ayarlar' ? 'text-red-600 border-b-2 border-red-600' : 'text-gray-400 dark:text-gray-500'}`}
           >
             <Bell size={16} /> Bekleyen Çağrılar ({cagrilar.length})
           </button>
         </div>
         
         <div className="grid grid-cols-2 gap-4 mb-4">
-          <div className="border-r border-gray-100 pr-4">
-            <h4 className="text-xs font-bold text-gray-500 mb-2 uppercase">Bekleyenler</h4>
+          <div className="border-r border-gray-100 dark:border-gray-800 pr-4">
+            <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 mb-2 uppercase">Bekleyenler</h4>
             <div className="space-y-2">
-              {cagrilar.length === 0 ? <p className="text-xs text-gray-400 italic">Bekleyen çağrı yok.</p> : cagrilar.map((cagri) => (
-                <div key={cagri.id} className="p-2 bg-red-50 rounded-lg flex justify-between items-center text-sm">
-                  <span className="font-medium text-red-700">Masa: {cagri.masaNo}</span>
+              {cagrilar.length === 0 ? <p className="text-xs text-gray-400 dark:text-gray-500 italic">Bekleyen çağrı yok.</p> : cagrilar.map((cagri) => (
+                <div key={cagri.id} className="p-2 bg-red-50 dark:bg-red-900/20 rounded-lg flex justify-between items-center text-sm">
+                  <span className="font-medium text-red-700 dark:text-red-400">Masa: {cagri.masaNo}</span>
                   <button onClick={() => handleTamamla(cagri.id)} className="bg-green-500 text-white px-2 py-1 rounded text-[10px] font-bold">Tamamla</button>
                 </div>
               ))}
             </div>
           </div>
           <div>
-            <h4 className="text-xs font-bold text-gray-500 mb-2 uppercase">Eski Çağrılar</h4>
+            <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 mb-2 uppercase">Eski Çağrılar</h4>
             <div className="space-y-2">
-              {tamamlananCagrilar.length === 0 ? <p className="text-xs text-gray-400 italic">Eski çağrı yok.</p> : tamamlananCagrilar.slice((currentPageEskiCagrilar - 1) * itemsPerPageEskiCagrilar, currentPageEskiCagrilar * itemsPerPageEskiCagrilar).map((cagri) => (
-                <div key={cagri.id} className="p-2 bg-gray-50 rounded-lg flex justify-between items-center text-sm">
-                  <span className="text-gray-600">Masa: {cagri.masaNo}</span>
-                  <span className="text-[10px] text-gray-400">{new Date(cagri.olusturuldu).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+              {tamamlananCagrilar.length === 0 ? <p className="text-xs text-gray-400 dark:text-gray-500 italic">Eski çağrı yok.</p> : tamamlananCagrilar.slice((currentPageEskiCagrilar - 1) * itemsPerPageEskiCagrilar, currentPageEskiCagrilar * itemsPerPageEskiCagrilar).map((cagri) => (
+                <div key={cagri.id} className="p-2 bg-gray-50 dark:bg-gray-800 rounded-lg flex justify-between items-center text-sm">
+                  <span className="text-gray-600 dark:text-gray-300">Masa: {cagri.masaNo}</span>
+                  <span className="text-[10px] text-gray-400 dark:text-gray-500">{new Date(cagri.olusturuldu).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                 </div>
               ))}
             </div>
@@ -277,7 +277,7 @@ export default function AdminPanel() {
                 <button 
                   disabled={currentPageEskiCagrilar === 1} 
                   onClick={() => setCurrentPageEskiCagrilar(prev => prev - 1)}
-                  className="px-2 py-0.5 bg-gray-100 rounded text-[10px] disabled:opacity-50"
+                  className="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 dark:text-gray-300 rounded text-[10px] disabled:opacity-50"
                 >
                   &lt;
                 </button>
@@ -285,7 +285,7 @@ export default function AdminPanel() {
                 <button 
                   disabled={currentPageEskiCagrilar === Math.ceil(tamamlananCagrilar.length / itemsPerPageEskiCagrilar)} 
                   onClick={() => setCurrentPageEskiCagrilar(prev => prev + 1)}
-                  className="px-2 py-0.5 bg-gray-100 rounded text-[10px] disabled:opacity-50"
+                  className="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 dark:text-gray-300 rounded text-[10px] disabled:opacity-50"
                 >
                   &gt;
                 </button>
@@ -298,20 +298,20 @@ export default function AdminPanel() {
       {/* Grid Tasarımı */}
       <div className="grid grid-cols-2 gap-3 mb-4 w-full">
         {menuItems.map((item, i) => (
-          <button key={i} onClick={() => setActiveTab(item.tab as any)} className="bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex flex-col items-center gap-1 text-center">
-            <div className="p-2 bg-green-50 text-green-600 rounded-lg">
+          <button key={i} onClick={() => setActiveTab(item.tab as any)} className="bg-white dark:bg-gray-900 p-3 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col items-center gap-1 text-center hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+            <div className="p-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-lg">
               <item.icon size={20} />
             </div>
-            <h4 className="font-bold text-gray-900 text-xs">{item.name}</h4>
+            <h4 className="font-bold text-gray-900 dark:text-white text-xs">{item.name}</h4>
           </button>
         ))}
       </div>
 
       {/* Tab İçerikleri */}
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 w-full">
+      <div className="bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 w-full">
         {activeTab === 'yemekler' && (
           <>
-            <h3 className="text-sm font-bold mb-2">{duzenlenenYemek ? 'Yemek Düzenle' : 'Yemek Ekle'}</h3>
+            <h3 className="text-sm font-bold mb-2 dark:text-white">{duzenlenenYemek ? 'Yemek Düzenle' : 'Yemek Ekle'}</h3>
             <div className="space-y-2 mb-3">
               <input value={yeniYemekAd} onChange={e => setYeniYemekAd(e.target.value)} placeholder="Yemek Adı" className="border border-gray-200 dark:border-gray-700 p-2 rounded-lg text-sm w-full bg-white dark:bg-gray-800 dark:text-white" />
               <input type="number" value={yeniYemekFiyat} onChange={e => setYeniYemekFiyat(e.target.value)} placeholder="Fiyat" className="border border-gray-200 dark:border-gray-700 p-2 rounded-lg text-sm w-full bg-white dark:bg-gray-800 dark:text-white" />
@@ -334,7 +334,7 @@ export default function AdminPanel() {
             </div>
             <div className="space-y-2">
               {yemekler.slice((currentPageYemekler - 1) * itemsPerPage, currentPageYemekler * itemsPerPage).map(y => (
-                <div key={y.id} className="flex justify-between items-center p-2 border-b border-gray-50 text-sm">
+                <div key={y.id} className="flex justify-between items-center p-2 border-b border-gray-50 dark:border-gray-800 text-sm">
                   <div className="flex items-center gap-2">
                     {y.resim && (
                       <img 
@@ -348,8 +348,8 @@ export default function AdminPanel() {
                       />
                     )}
                     <div>
-                      <p className="font-medium text-gray-700">{y.ad}</p>
-                      <p className="text-xs text-gray-500">{y.fiyat} TL - {y.aktif ? 'Açık' : 'Kapalı'}</p>
+                      <p className="font-medium text-gray-700 dark:text-gray-200">{y.ad}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{y.fiyat} TL - {y.aktif ? 'Açık' : 'Kapalı'}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
@@ -372,15 +372,15 @@ export default function AdminPanel() {
                 <button 
                   disabled={currentPageYemekler === 1} 
                   onClick={() => setCurrentPageYemekler(prev => prev - 1)}
-                  className="px-3 py-1 bg-gray-100 rounded-lg text-xs disabled:opacity-50"
+                  className="px-3 py-1 bg-gray-100 dark:bg-gray-800 dark:text-gray-300 rounded-lg text-xs disabled:opacity-50"
                 >
                   Geri
                 </button>
-                <span className="text-xs flex items-center">{currentPageYemekler} / {Math.ceil(yemekler.length / itemsPerPage)}</span>
+                <span className="text-xs flex items-center dark:text-gray-300">{currentPageYemekler} / {Math.ceil(yemekler.length / itemsPerPage)}</span>
                 <button 
                   disabled={currentPageYemekler === Math.ceil(yemekler.length / itemsPerPage)} 
                   onClick={() => setCurrentPageYemekler(prev => prev + 1)}
-                  className="px-3 py-1 bg-gray-100 rounded-lg text-xs disabled:opacity-50"
+                  className="px-3 py-1 bg-gray-100 dark:bg-gray-800 dark:text-gray-300 rounded-lg text-xs disabled:opacity-50"
                 >
                   İleri
                 </button>
@@ -391,7 +391,7 @@ export default function AdminPanel() {
 
         {activeTab === 'kategoriler' && (
           <>
-            <h3 className="text-sm font-bold mb-2">{duzenlenenKategori ? 'Kategori Düzenle' : 'Kategori Ekle'}</h3>
+            <h3 className="text-sm font-bold mb-2 dark:text-white">{duzenlenenKategori ? 'Kategori Düzenle' : 'Kategori Ekle'}</h3>
             <div className="space-y-2 mb-3">
               <input 
                 value={yeniKategoriAd} 
@@ -415,8 +415,8 @@ export default function AdminPanel() {
             </div>
             <div className="space-y-2">
               {kategoriler.map(k => (
-                <div key={k.id} className="flex justify-between items-center p-2 border-b border-gray-50 text-sm">
-                  <span className="font-medium text-gray-700">{k.sira}. {k.ad}</span>
+                <div key={k.id} className="flex justify-between items-center p-2 border-b border-gray-50 dark:border-gray-800 text-sm">
+                  <span className="font-medium text-gray-700 dark:text-gray-200">{k.sira}. {k.ad}</span>
                   <div className="flex gap-2">
                     <button onClick={() => handleDuzenle(k)} className="text-blue-500">Düzenle</button>
                     <button onClick={() => handleKategoriSil(k.id)} className="text-red-500"><Trash2 size={16} /></button>
@@ -429,26 +429,26 @@ export default function AdminPanel() {
 
         {activeTab === 'siparisler' && (
           <>
-            <h3 className="text-sm font-bold mb-2">Müşteri Siparişleri</h3>
-            {siparisler.length === 0 ? <p className="text-xs text-gray-500">Henüz sipariş yok.</p> : (
+            <h3 className="text-sm font-bold mb-2 dark:text-white">Müşteri Siparişleri</h3>
+            {siparisler.length === 0 ? <p className="text-xs text-gray-500 dark:text-gray-400">Henüz sipariş yok.</p> : (
               <>
                 {siparisler.slice((currentPageSiparisler - 1) * itemsPerPage, currentPageSiparisler * itemsPerPage).map(s => (
-                  <div key={s.id} className="p-3 border-b border-gray-100 text-sm cursor-pointer hover:bg-gray-50 transition-colors" onClick={() => setDuzenlenenSiparis(s)}>
-                    <div className="font-bold text-gray-900 mb-1">
+                  <div key={s.id} className="p-3 border-b border-gray-100 dark:border-gray-800 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors" onClick={() => setDuzenlenenSiparis(s)}>
+                    <div className="font-bold text-gray-900 dark:text-white mb-1">
                       {s.yemekler ? (
                         (typeof s.yemekler === 'string' ? JSON.parse(s.yemekler) : s.yemekler).map((y: string, idx: number) => (
                           <div key={idx} className="flex items-center gap-2 mb-0.5 last:mb-0">
-                            <span className="inline-flex items-center justify-center bg-green-100 text-green-700 px-1.5 py-0.5 rounded text-[10px] font-black min-w-[24px]">
+                            <span className="inline-flex items-center justify-center bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded text-[10px] font-black min-w-[24px]">
                               {y.includes('x ') ? y.split('x ')[0] : '1'}x
                             </span>
-                            <span className="text-gray-800">{y.includes('x ') ? y.split('x ')[1] : y}</span>
+                            <span className="text-gray-800 dark:text-gray-200">{y.includes('x ') ? y.split('x ')[1] : y}</span>
                           </div>
                         ))
                       ) : (
-                        <span className="text-gray-800">{s.yemekAd}</span>
+                        <span className="text-gray-800 dark:text-gray-200">{s.yemekAd}</span>
                       )}
                     </div>
-                    <p className="text-xs text-gray-500">Masa: {s.masaNo} - <span className="font-semibold text-gray-700">{s.toplamFiyat} TL</span> - Durum: <span className={`font-medium ${s.durum === 'Tamamlandı' ? 'text-green-600' : 'text-orange-600'}`}>{s.durum || 'Bekliyor'}</span></p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Masa: {s.masaNo} - <span className="font-semibold text-gray-700 dark:text-gray-200">{s.toplamFiyat} TL</span> - Durum: <span className={`font-medium ${s.durum === 'Tamamlandı' ? 'text-green-600' : 'text-orange-600'}`}>{s.durum || 'Bekliyor'}</span></p>
                   </div>
                 ))}
                 {/* Sipariş Sayfalandırma */}
@@ -457,15 +457,15 @@ export default function AdminPanel() {
                     <button 
                       disabled={currentPageSiparisler === 1} 
                       onClick={() => setCurrentPageSiparisler(prev => prev - 1)}
-                      className="px-3 py-1 bg-gray-100 rounded-lg text-xs disabled:opacity-50"
+                      className="px-3 py-1 bg-gray-100 dark:bg-gray-800 dark:text-gray-300 rounded-lg text-xs disabled:opacity-50"
                     >
                       Geri
                     </button>
-                    <span className="text-xs flex items-center">{currentPageSiparisler} / {Math.ceil(siparisler.length / itemsPerPage)}</span>
+                    <span className="text-xs flex items-center dark:text-gray-300">{currentPageSiparisler} / {Math.ceil(siparisler.length / itemsPerPage)}</span>
                     <button 
                       disabled={currentPageSiparisler === Math.ceil(siparisler.length / itemsPerPage)} 
                       onClick={() => setCurrentPageSiparisler(prev => prev + 1)}
-                      className="px-3 py-1 bg-gray-100 rounded-lg text-xs disabled:opacity-50"
+                      className="px-3 py-1 bg-gray-100 dark:bg-gray-800 dark:text-gray-300 rounded-lg text-xs disabled:opacity-50"
                     >
                       İleri
                     </button>
@@ -476,8 +476,8 @@ export default function AdminPanel() {
             
             {duzenlenenSiparis && (
               <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                <div className="bg-white p-4 rounded-xl w-full max-w-sm">
-                  <h3 className="font-bold mb-2">Sipariş Düzenle</h3>
+                <div className="bg-white dark:bg-gray-900 p-4 rounded-xl w-full max-w-sm border border-gray-100 dark:border-gray-800">
+                  <h3 className="font-bold mb-2 dark:text-white">Sipariş Düzenle</h3>
                   <input 
                     value={duzenlenenSiparis.masaNo} 
                     onChange={e => setDuzenlenenSiparis({...duzenlenenSiparis, masaNo: e.target.value})} 
@@ -488,7 +488,7 @@ export default function AdminPanel() {
                       <p className="text-xs font-bold mb-1 dark:text-white">Ürünler:</p>
                       <div className="flex flex-wrap gap-1 mb-2">
                         {(typeof duzenlenenSiparis.yemekler === 'string' ? JSON.parse(duzenlenenSiparis.yemekler) : duzenlenenSiparis.yemekler).map((y: string, i: number) => (
-                          <span key={i} className="bg-gray-100 px-2 py-1 rounded text-xs flex items-center gap-1">
+                          <span key={i} className="bg-gray-100 dark:bg-gray-800 dark:text-gray-200 px-2 py-1 rounded text-xs flex items-center gap-1">
                             {y}
                             <button onClick={() => {
                               const quantity = y.includes('x ') ? parseInt(y.split('x ')[0]) : 1;
@@ -511,7 +511,7 @@ export default function AdminPanel() {
                           min="1" 
                           value={eklenecekAdet} 
                           onChange={e => setEklenecekAdet(Math.max(1, parseInt(e.target.value) || 1))} 
-                          className="border p-2 rounded w-16 text-sm"
+                          className="border border-gray-200 dark:border-gray-700 p-2 rounded w-16 text-sm bg-white dark:bg-gray-800 dark:text-white"
                           placeholder="Adet"
                         />
                         <select 
@@ -529,7 +529,7 @@ export default function AdminPanel() {
                             setEklenecekAdet(1);
                             e.target.value = "";
                           }}
-                          className="border p-2 rounded flex-1 text-sm"
+                          className="border border-gray-200 dark:border-gray-700 p-2 rounded flex-1 text-sm bg-white dark:bg-gray-800 dark:text-white"
                         >
                           <option value="">Ürün Ekle</option>
                           {yemekler.map(y => <option key={y.id} value={y.ad}>{y.ad}</option>)}
@@ -561,7 +561,7 @@ export default function AdminPanel() {
                     }} className={`${duzenlenenSiparis.durum === 'Tamamlandı' ? 'bg-yellow-600' : 'bg-green-600'} text-white px-3 py-2 rounded-lg flex-1 text-sm`}>
                       {duzenlenenSiparis.durum === 'Tamamlandı' ? 'Aktif Et' : 'Tamamla'}
                     </button>
-                    <button onClick={() => setDuzenlenenSiparis(null)} className="bg-gray-200 px-3 py-2 rounded-lg flex-1 text-sm">Kapat</button>
+                    <button onClick={() => setDuzenlenenSiparis(null)} className="bg-gray-200 dark:bg-gray-700 dark:text-white px-3 py-2 rounded-lg flex-1 text-sm">Kapat</button>
                   </div>
                 </div>
               </div>
@@ -571,7 +571,7 @@ export default function AdminPanel() {
 
         {activeTab === 'ayarlar' && (
           <>
-            <h3 className="text-sm font-bold mb-2">Uygulama Ayarları</h3>
+            <h3 className="text-sm font-bold mb-2 dark:text-white">Uygulama Ayarları</h3>
             <div className="space-y-2 mb-3">
               <input 
                 value={ayarlar.uygulamaAdi} 
