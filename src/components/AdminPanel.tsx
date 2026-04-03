@@ -93,7 +93,18 @@ export default function AdminPanel() {
       ]);
       setKategoriler(katRes);
       setYemekler(yemekRes);
-      setSiparisler(sipRes);
+      
+      const sortedSiparisler = sipRes.sort((a: any, b: any) => {
+        const durumA = a.durum || 'Bekliyor';
+        const durumB = b.durum || 'Bekliyor';
+        
+        if (durumA === 'Bekliyor' && durumB !== 'Bekliyor') return -1;
+        if (durumA !== 'Bekliyor' && durumB === 'Bekliyor') return 1;
+        
+        return new Date(b.olusturuldu).getTime() - new Date(a.olusturuldu).getTime();
+      });
+      
+      setSiparisler(sortedSiparisler);
       setCagrilar(cagriRes);
       setTamamlananCagrilar(tamamlananCagriRes);
       setAyarlar(ayarlarRes);
@@ -461,7 +472,13 @@ export default function AdminPanel() {
                         <span className="text-gray-800 dark:text-gray-200">{s.yemekAd}</span>
                       )}
                     </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Masa: {s.masaNo} - <span className="font-semibold text-gray-700 dark:text-gray-200">{s.toplamFiyat} TL</span> - Durum: <span className={`font-medium ${s.durum === 'Tamamlandı' ? 'text-green-600' : 'text-orange-600'}`}>{s.durum || 'Bekliyor'}</span></p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Masa: {s.masaNo} - <span className="font-semibold text-gray-700 dark:text-gray-200">{s.toplamFiyat} TL</span> - 
+                      Durum: <span className={`font-medium ${s.durum === 'Tamamlandı' ? 'text-green-600' : 'text-orange-600'}`}>{s.durum || 'Bekliyor'}</span>
+                      <span className="ml-2 text-[10px] opacity-70">
+                        ({new Date(s.olusturuldu).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })})
+                      </span>
+                    </p>
                   </div>
                 ))}
                 {/* Sipariş Sayfalandırma */}
