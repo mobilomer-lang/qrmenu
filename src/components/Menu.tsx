@@ -21,6 +21,7 @@ export default function Menu() {
   const [yemekler, setYemekler] = useState<any[]>([]);
   const [ayarlar, setAyarlar] = useState<any>({ uygulamaAdi: 'Green Restaurant', logoUrl: '', sistemAcik: 1 });
   const [cart, setCart] = useState<{ [key: string]: { item: any, quantity: number } }>({});
+  const [inputQuantities, setInputQuantities] = useState<{ [key: string]: number }>({});
   const [isWaiterModalOpen, setIsWaiterModalOpen] = useState(false);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
@@ -211,7 +212,7 @@ export default function Menu() {
               {/* Yemek Listesi */}
               <div className="px-4 space-y-6">
                 {yemekler.filter(y => y.kategori === aktifKategori && y.aktif === 1).map(yemek => {
-                  const quantity = cart[yemek.id]?.quantity || 0;
+                  const inputVal = inputQuantities[yemek.id] ?? 1;
                   return (
                     <div key={yemek.id} className="relative flex flex-row items-center bg-white dark:bg-gray-800 p-4 rounded-3xl shadow-md overflow-hidden h-32">
                       {/* Sol: Metinler */}
@@ -222,26 +223,24 @@ export default function Menu() {
                           <span className="bg-green-500 text-white font-bold px-4 py-1 rounded-full text-sm w-fit shadow-md">₺{yemek.fiyat},00</span>
                           <div className="flex items-center gap-3 bg-gray-100 dark:bg-gray-700 rounded-full px-2 py-1">
                             <button 
-                              onClick={() => updateQuantity(yemek, -1)} 
+                              onClick={() => updateQuantity(yemek, -inputVal)} 
                               className="w-6 h-6 flex items-center justify-center rounded-full bg-white dark:bg-gray-600 text-gray-800 dark:text-white font-bold"
                             >
                               -
                             </button>
                             <input 
                               type="number"
-                              min="0"
-                              value={quantity}
+                              min="1"
+                              value={inputVal}
                               onChange={(e) => {
                                 const val = parseInt(e.target.value);
-                                if (!isNaN(val)) {
-                                  setQuantityDirectly(yemek, val);
-                                }
+                                setInputQuantities(prev => ({ ...prev, [yemek.id]: isNaN(val) ? 1 : val }));
                               }}
                               onFocus={(e) => e.target.select()}
                               className="w-10 text-center bg-white dark:bg-gray-600 rounded-md text-sm font-bold dark:text-white focus:outline-none border border-gray-200 dark:border-gray-500"
                             />
                             <button 
-                              onClick={() => updateQuantity(yemek, 1)} 
+                              onClick={() => updateQuantity(yemek, inputVal)} 
                               className={`w-6 h-6 flex items-center justify-center rounded-full font-bold ${yemek.stokta === 0 ? 'bg-red-100 text-red-600' : 'bg-green-500 text-white'}`}
                             >
                               +
@@ -285,6 +284,8 @@ export default function Menu() {
             isOpen={isOrderModalOpen} 
             onClose={() => setIsOrderModalOpen(false)} 
             onOrder={handleOrder} 
+            cart={cart}
+            updateQuantity={updateQuantity}
           />
         </>
       )}
