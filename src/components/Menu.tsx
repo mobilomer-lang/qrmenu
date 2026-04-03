@@ -105,16 +105,21 @@ export default function Menu() {
 
   const handleCallWaiter = async (masaNo: string) => {
     try {
-      await fetch('/api/garson-cagir', {
+      const response = await fetch('/api/garson-cagir', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ masaNo }),
       });
+      
+      if (!response.ok) {
+        throw new Error('Sunucu hatası: ' + response.status);
+      }
+
       setNotification('Birazdan garson yanınızda');
       setTimeout(() => setNotification(null), 2000);
     } catch (error) {
       console.error('Hata:', error);
-      alert('Çağrı gönderilemedi.');
+      alert('Garson çağrılamadı: ' + (error instanceof Error ? error.message : 'Bilinmeyen hata'));
     }
   };
 
@@ -123,7 +128,7 @@ export default function Menu() {
       const cartItems = Object.values(cart) as { item: any, quantity: number }[];
       if (cartItems.length === 0) return;
 
-      await fetch('/api/siparisler', {
+      const response = await fetch('/api/siparisler', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -132,12 +137,17 @@ export default function Menu() {
           toplamFiyat: cartItems.reduce((sum, c) => sum + (Number(c.item.fiyat) * c.quantity), 0),
         }),
       });
+
+      if (!response.ok) {
+        throw new Error('Sunucu hatası: ' + response.status);
+      }
+
       setCart({});
       setNotification('Siparişiniz alındı!');
       setTimeout(() => setNotification(null), 2000);
     } catch (error) {
       console.error('Hata:', error);
-      alert('Sipariş gönderilemedi.');
+      alert('Sipariş gönderilemedi: ' + (error instanceof Error ? error.message : 'Bilinmeyen hata'));
     }
   };
 

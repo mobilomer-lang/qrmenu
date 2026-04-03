@@ -100,12 +100,12 @@ export default function AdminPanel() {
   const fetchData = async () => {
     try {
       const [katRes, yemekRes, sipRes, cagriRes, ayarlarRes, tamamlananCagriRes] = await Promise.all([
-        fetch('/api/kategoriler').then(r => r.json()),
-        fetch('/api/yemekler').then(r => r.json()),
-        fetch('/api/siparisler').then(r => r.json()),
-        fetch('/api/cagrilar').then(r => r.json()),
-        fetch('/api/ayarlar').then(r => r.json()),
-        fetch('/api/cagrilar/tamamlanan').then(r => r.json()),
+        fetch('/api/kategoriler').then(r => r.ok ? r.json() : Promise.reject('Kategoriler çekilemedi')),
+        fetch('/api/yemekler').then(r => r.ok ? r.json() : Promise.reject('Yemekler çekilemedi')),
+        fetch('/api/siparisler').then(r => r.ok ? r.json() : Promise.reject('Siparişler çekilemedi')),
+        fetch('/api/cagrilar').then(r => r.ok ? r.json() : Promise.reject('Çağrılar çekilemedi')),
+        fetch('/api/ayarlar').then(r => r.ok ? r.json() : Promise.reject('Ayarlar çekilemedi')),
+        fetch('/api/cagrilar/tamamlanan').then(r => r.ok ? r.json() : Promise.reject('Tamamlanan çağrılar çekilemedi')),
       ]);
       setKategoriler(katRes);
       setYemekler(yemekRes);
