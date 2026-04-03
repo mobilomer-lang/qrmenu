@@ -70,6 +70,22 @@ export default function AdminPanel() {
     return Array.isArray(yemekler) ? yemekler : [];
   };
 
+  const consolidateItems = (items: any[]) => {
+    const map: { [key: string]: number } = {};
+    items.forEach(item => {
+      if (typeof item !== 'string') return;
+      const match = item.match(/^(\d+)x\s+(.*)$/);
+      if (match) {
+        const qty = parseInt(match[1]);
+        const name = match[2];
+        map[name] = (map[name] || 0) + qty;
+      } else {
+        map[item] = (map[item] || 0) + 1;
+      }
+    });
+    return Object.entries(map).map(([name, qty]) => `${qty}x ${name}`);
+  };
+
   const handleSiparisDurumGuncelle = async (id: string, durum: string) => {
     await fetch(`/api/siparisler/${id}`, { 
       method: 'PUT', 
@@ -93,17 +109,11 @@ export default function AdminPanel() {
       ]);
       setKategoriler(katRes);
       setYemekler(yemekRes);
-      
-      const sortedSiparisler = sipRes.sort((a: any, b: any) => {
-        const durumA = a.durum || 'Bekliyor';
-        const durumB = b.durum || 'Bekliyor';
-        
-        if (durumA === 'Bekliyor' && durumB !== 'Bekliyor') return -1;
-        if (durumA !== 'Bekliyor' && durumB === 'Bekliyor') return 1;
-        
-        return new Date(b.olusturuldu).getTime() - new Date(a.olusturuldu).getTime();
+      const sortedSiparisler = [...sipRes].sort((a: any, b: any) => {
+        if (a.durum === 'Bekliyor' && b.durum !== 'Bekliyor') return -1;
+        if (a.durum !== 'Bekliyor' && b.durum === 'Bekliyor') return 1;
+        return b.id - a.id;
       });
-      
       setSiparisler(sortedSiparisler);
       setCagrilar(cagriRes);
       setTamamlananCagrilar(tamamlananCagriRes);
@@ -457,28 +467,30 @@ export default function AdminPanel() {
             {siparisler.length === 0 ? <p className="text-xs text-gray-500 dark:text-gray-400">Henüz sipariş yok.</p> : (
               <>
                 {siparisler.slice((currentPageSiparisler - 1) * itemsPerPage, currentPageSiparisler * itemsPerPage).map(s => (
-                  <div key={s.id} className="p-3 border-b border-gray-100 dark:border-gray-800 text-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors" onClick={() => setDuzenlenenSiparis(s)}>
-                    <div className="font-bold text-gray-900 dark:text-white mb-1">
-                      {s.yemekler ? (
-                        safeParseYemekler(s.yemekler).map((y: string, idx: number) => (
-                          <div key={idx} className="flex items-center gap-2 mb-0.5 last:mb-0">
-                            <span className="inline-flex items-center justify-center bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-1.5 py-0.5 rounded text-[10px] font-black min-w-[24px]">
-                              {y.includes('x ') ? y.split('x ')[0] : '1'}x
-                            </span>
-                            <span className="text-gray-800 dark:text-gray-200">{y.includes('x ') ? y.split('x ')[1] : y}</span>
-                          </div>
-                        ))
-                      ) : (
-                        <span className="text-gray-800 dark:text-gray-200">{s.yemekAd}</span>
-                      )}
+                  <div 
+                    key={s.id} 
+                    className={`p-3 border-b border-gray-100 dark:border-gray-800 text-sm cursor-pointer transition-colors ${
+                      s.durum === 'Tamamlandı' 
+                        ? 'bg-green-100/60 dark:bg-green-900/20 hover:bg-green-200 dark:hover:bg-green-900/30' 
+                        : 'bg-red-100/60 dark:bg-red-900/20 hover:bg-red-200 dark:hover:bg-red-900/30'
+                    }`} 
+                    onClick={() => {
+                      const consolidated = consolidateItems(safeParseYemekler(s.yemekler));
+                      setDuzenlenenSiparis({ ...s, yemekler: consolidated });
+                    }}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div className="flex flex-col">
+                        <span className="font-bold text-gray-900 dark:text-white">Masa: {s.masaNo}</span>
+                        <span className="text-green-600 font-bold text-xs">Masa Hesabı: ₺{s.toplamFiyat},00</span>
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                        <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${s.durum === 'Tamamlandı' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                          {s.durum || 'Bekliyor'}
+                        </span>
+                        <span className="text-[10px] text-gray-400 font-medium">Sipariş Detayları</span>
+                      </div>
                     </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Masa: {s.masaNo} - <span className="font-semibold text-gray-700 dark:text-gray-200">{s.toplamFiyat} TL</span> - 
-                      Durum: <span className={`font-medium ${s.durum === 'Tamamlandı' ? 'text-green-600' : 'text-orange-600'}`}>{s.durum || 'Bekliyor'}</span>
-                      <span className="ml-2 text-[10px] opacity-70">
-                        ({new Date(s.olusturuldu).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })})
-                      </span>
-                    </p>
                   </div>
                 ))}
                 {/* Sipariş Sayfalandırma */}
@@ -514,26 +526,58 @@ export default function AdminPanel() {
                     className="border border-gray-200 dark:border-gray-700 p-2 rounded w-full mb-2 bg-white dark:bg-gray-800 dark:text-white" 
                     placeholder="Masa No" 
                   />
-                    <div className="mb-2">
-                      <p className="text-xs font-bold mb-1 dark:text-white">Ürünler:</p>
-                      <div className="flex flex-wrap gap-1 mb-2">
-                        {safeParseYemekler(duzenlenenSiparis.yemekler).map((y: string, i: number) => (
-                          <span key={i} className="bg-gray-100 dark:bg-gray-800 dark:text-gray-200 px-2 py-1 rounded text-xs flex items-center gap-1">
-                            {y}
-                            <button onClick={() => {
-                              const quantity = y.includes('x ') ? parseInt(y.split('x ')[0]) : 1;
-                              const itemName = y.includes('x ') ? y.split('x ')[1] : y;
-                              const urun = yemekler.find(yemek => yemek.ad === itemName);
-                              const fiyat = urun ? urun.fiyat * quantity : 0;
-                              const mevcutUrunler = safeParseYemekler(duzenlenenSiparis.yemekler);
-                              setDuzenlenenSiparis({
-                                ...duzenlenenSiparis,
-                                yemekler: mevcutUrunler.filter((_: any, index: number) => index !== i),
-                                toplamFiyat: Math.max(0, duzenlenenSiparis.toplamFiyat - fiyat)
-                              });
-                            }} className="text-red-500">x</button>
-                          </span>
-                        ))}
+                    <div className="mb-4">
+                      <p className="text-xs font-bold mb-2 dark:text-white">Ürünler:</p>
+                      <div className="space-y-2 mb-4 max-h-48 overflow-y-auto pr-1">
+                        {safeParseYemekler(duzenlenenSiparis.yemekler).map((y: string, i: number) => {
+                          const quantity = y.includes('x ') ? parseInt(y.split('x ')[0]) : 1;
+                          const itemName = y.includes('x ') ? y.split('x ')[1] : y;
+                          const urun = yemekler.find(yemek => yemek.ad === itemName);
+
+                          const updateItemQty = (delta: number) => {
+                            const newQty = Math.max(0, quantity + delta);
+                            const mevcutUrunler = safeParseYemekler(duzenlenenSiparis.yemekler);
+                            let yeniUrunler;
+                            let yeniFiyat = duzenlenenSiparis.toplamFiyat;
+
+                            if (newQty === 0) {
+                              yeniUrunler = mevcutUrunler.filter((_: any, index: number) => index !== i);
+                              yeniFiyat = Math.max(0, yeniFiyat - (urun?.fiyat || 0));
+                            } else {
+                              yeniUrunler = [...mevcutUrunler];
+                              yeniUrunler[i] = `${newQty}x ${itemName}`;
+                              yeniFiyat = yeniFiyat + (delta * (urun?.fiyat || 0));
+                            }
+
+                            setDuzenlenenSiparis({
+                              ...duzenlenenSiparis,
+                              yemekler: yeniUrunler,
+                              toplamFiyat: yeniFiyat
+                            });
+                          };
+
+                          return (
+                            <div key={i} className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 p-2 rounded-lg border border-gray-100 dark:border-gray-700">
+                              <div className="flex items-center gap-2">
+                                <div className="flex items-center bg-white dark:bg-gray-700 rounded-md border border-gray-200 dark:border-gray-600 overflow-hidden">
+                                  <button 
+                                    onClick={() => updateItemQty(-1)}
+                                    className="px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 font-bold border-r border-gray-200 dark:border-gray-600"
+                                  >-</button>
+                                  <span className="px-2 py-1 text-xs font-bold dark:text-white min-w-[24px] text-center">{quantity}</span>
+                                  <button 
+                                    onClick={() => updateItemQty(1)}
+                                    className="px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 font-bold border-l border-gray-200 dark:border-gray-600"
+                                  >+</button>
+                                </div>
+                                <span className="text-xs font-medium dark:text-gray-200">{itemName}</span>
+                              </div>
+                              <button onClick={() => updateItemQty(-quantity)} className="text-red-500 p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded">
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          );
+                        })}
                       </div>
                       <div className="flex gap-2">
                         <input 
@@ -551,9 +595,10 @@ export default function AdminPanel() {
                             const urun = yemekler.find(y => y.ad === yeniUrunAd);
                             if (!urun) return;
                             const mevcutUrunler = safeParseYemekler(duzenlenenSiparis.yemekler);
+                            const yeniUrunler = consolidateItems([...mevcutUrunler, `${eklenecekAdet}x ${yeniUrunAd}`]);
                             setDuzenlenenSiparis({
                               ...duzenlenenSiparis,
-                              yemekler: [...mevcutUrunler, `${eklenecekAdet}x ${yeniUrunAd}`],
+                              yemekler: yeniUrunler,
                               toplamFiyat: duzenlenenSiparis.toplamFiyat + (urun.fiyat * eklenecekAdet)
                             });
                             setEklenecekAdet(1);

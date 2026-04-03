@@ -24,6 +24,7 @@ export default function Menu() {
   const [inputQuantities, setInputQuantities] = useState<{ [key: string]: number }>({});
   const [isWaiterModalOpen, setIsWaiterModalOpen] = useState(false);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+  const [selectedYemek, setSelectedYemek] = useState<any>(null);
   const [notification, setNotification] = useState<string | null>(null);
 
   const [isLoading, setIsLoading] = useState(true);
@@ -214,10 +215,18 @@ export default function Menu() {
                 {yemekler.filter(y => y.kategori === aktifKategori && y.aktif === 1).map(yemek => {
                   const inputVal = inputQuantities[yemek.id] ?? 1;
                   return (
-                    <div key={yemek.id} className="relative flex flex-row items-center bg-white dark:bg-gray-800 p-4 rounded-3xl shadow-md overflow-hidden h-32">
+                    <div 
+                      key={yemek.id} 
+                      className="relative flex flex-row items-center bg-white dark:bg-gray-800 p-4 rounded-3xl shadow-md overflow-hidden h-32 transition-colors"
+                    >
                       {/* Sol: Metinler */}
                       <div className="flex-1 flex flex-col justify-center gap-1 pr-4">
-                        <h3 className="font-bold text-[16px] text-black dark:text-white">{yemek.ad} {yemek.stokta === 0 && <span className="text-red-500 text-xs ml-2">(Tükendi)</span>}</h3>
+                        <h3 
+                          className="font-bold text-[16px] text-black dark:text-white cursor-pointer hover:text-green-600 transition-colors"
+                          onClick={() => setSelectedYemek(yemek)}
+                        >
+                          {yemek.ad} {yemek.stokta === 0 && <span className="text-red-500 text-xs ml-2">(Tükendi)</span>}
+                        </h3>
                         <p className="text-gray-400 dark:text-gray-400 text-sm line-clamp-2">{yemek.aciklama}</p>
                         <div className="flex items-center justify-between mt-2">
                           <span className="bg-green-500 text-white font-bold px-4 py-1 rounded-full text-sm w-fit shadow-md">₺{yemek.fiyat},00</span>
@@ -252,8 +261,9 @@ export default function Menu() {
                       <img 
                         src={yemek.resim || 'https://picsum.photos/seed/food/200/200'} 
                         alt={yemek.ad} 
-                        className="food-card-image"
+                        className="food-card-image cursor-pointer hover:opacity-90 transition-opacity"
                         referrerPolicy="no-referrer"
+                        onClick={() => setSelectedYemek(yemek)}
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = 'https://picsum.photos/seed/food/200/200';
                         }}
@@ -287,8 +297,48 @@ export default function Menu() {
             cart={cart}
             updateQuantity={updateQuantity}
           />
+
+          {/* Ürün Detay Modal */}
+          {selectedYemek && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-6" onClick={() => setSelectedYemek(null)}>
+              <div 
+                className="bg-white dark:bg-gray-900 rounded-[32px] w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="relative h-64">
+                  <img 
+                    src={selectedYemek.resim || 'https://picsum.photos/seed/food/400/400'} 
+                    alt={selectedYemek.ad} 
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+                <div className="p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h2 className="text-2xl font-black text-gray-900 dark:text-white leading-tight">{selectedYemek.ad}</h2>
+                      <span className="text-green-600 dark:text-green-400 font-bold text-lg">₺{selectedYemek.fiyat},00</span>
+                    </div>
+                    {selectedYemek.stokta === 0 && (
+                      <span className="bg-red-100 text-red-600 px-3 py-1 rounded-full text-xs font-bold">Tükendi</span>
+                    )}
+                  </div>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed mb-6">
+                    {selectedYemek.aciklama || "Bu ürün için henüz bir açıklama girilmemiş."}
+                  </p>
+                  <button 
+                    onClick={() => setSelectedYemek(null)}
+                    className="w-full py-4 rounded-2xl font-bold text-2xl shadow-lg transition-all active:scale-95 bg-white dark:bg-gray-800 border-2 border-green-500 text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 flex items-center justify-center"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>
   );
 }
+

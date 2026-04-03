@@ -50,13 +50,33 @@ async function setupDatabase() {
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     yemekler TEXT,
     masaNo TEXT,
-    toplamFiyat REAL
+    toplamFiyat REAL,
+    olusturuldu DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
-  // 'durum' sütununu kontrol et ve ekle
+  // 'durum' ve 'olusturuldu' sütunlarını kontrol et ve ekle
   try {
-    await db.execute("ALTER TABLE siparisler ADD COLUMN durum TEXT DEFAULT 'Bekliyor'");
+    const tableInfo = await db.execute("PRAGMA table_info(siparisler)");
+    // @libsql/client rows can be accessed by column name 'name'
+    const columns = tableInfo.rows.map((r: any) => {
+      // Handle both object and array-like row formats
+      return r.name || r[1];
+    });
+    
+    console.log("Siparisler tablosu sütunları:", columns);
+    
+    if (!columns.includes('durum')) {
+      console.log("Siparisler tablosuna 'durum' sütunu ekleniyor...");
+      await db.execute("ALTER TABLE siparisler ADD COLUMN durum TEXT DEFAULT 'Bekliyor'");
+      console.log("Siparisler tablosuna 'durum' sütunu başarıyla eklendi.");
+    }
+    
+    if (!columns.includes('olusturuldu')) {
+      console.log("Siparisler tablosuna 'olusturuldu' sütunu ekleniyor...");
+      await db.execute("ALTER TABLE siparisler ADD COLUMN olusturuldu DATETIME DEFAULT CURRENT_TIMESTAMP");
+      console.log("Siparisler tablosuna 'olusturuldu' sütunu başarıyla eklendi.");
+    }
   } catch (e) {
-    // Sütun zaten mevcut olabilir
+    console.error("Siparisler tablosu güncellenirken kritik hata:", e);
   }
   await db.execute(`CREATE TABLE IF NOT EXISTS garsonCagrilar (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -202,17 +222,47 @@ async function startServer() {
 
   app.post("/api/siparisler", async (req, res) => {
     const { yemekler, masaNo, toplamFiyat } = req.body;
+    const olusturuldu = new Date().toISOString();
     await db.execute({
-      sql: "INSERT INTO siparisler (yemekler, masaNo, toplamFiyat) VALUES (?, ?, ?)",
-      args: [JSON.stringify(yemekler), masaNo, toplamFiyat],
+      sql: "INSERT INTO siparisler (yemekler, masaNo, toplamFiyat, olusturuldu) VALUES (?, ?, ?, ?)",
+      args: [JSON.stringify(yemekler), masaNo, toplamFiyat, olusturuldu],
     });
-    io.emit("yeni-siparis", req.body);
+    io.emit("yeni-siparis", { ...req.body, olusturuldu });
+    io.emit("data-changed");
     res.json({ status: "ok" });
   });
 
   app.get("/api/siparisler", async (req, res) => {
-    const result = await db.execute("SELECT * FROM siparisler");
-    res.json(result.rows);
+    try {
+      const result = await db.execute("SELECT id, yemekler, masaNo, toplamFiyat, olusturuldu, durum FROM siparisler ORDER BY olusturuldu DESC");
+      console.log(`Siparişler çekildi. Toplam: ${result.rows.length}`);
+      
+      // Verileri normalize et (tarih yoksa şu anki zamanı ata)
+      const normalizedRows = result.rows.map((row: any) => {
+        // Eğer row bir dizi ise (bazı libsql sürümlerinde olabiliyor), objeye çevir
+        let r: any = {};
+        if (Array.isArray(row)) {
+          result.columns.forEach((col, idx) => {
+            r[col] = row[idx];
+          });
+        } else {
+          r = { ...row };
+        }
+        
+        if (!r.olusturuldu) {
+          r.olusturuldu = new Date().toISOString();
+        }
+        return r;
+      });
+      
+      if (normalizedRows.length > 0) {
+        console.log('Örnek sipariş (normalize):', normalizedRows[0]);
+      }
+      res.json(normalizedRows);
+    } catch (error) {
+      console.error('Siparişler çekilirken hata:', error);
+      res.status(500).json({ error: 'Siparişler çekilemedi' });
+    }
   });
 
   app.put("/api/siparisler/:id", async (req, res) => {
