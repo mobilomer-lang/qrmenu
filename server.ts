@@ -76,6 +76,12 @@ async function setupDatabase() {
 }
 
 async function startServer() {
+  console.log("Sunucu başlatılıyor...");
+  console.log("Ortam Değişkenleri Kontrolü:");
+  console.log("- TURSO_DATABASE_URL:", process.env.TURSO_DATABASE_URL ? "Tanımlı (Gizlendi)" : "TANIMLANMAMIŞ!");
+  console.log("- TURSO_AUTH_TOKEN:", process.env.TURSO_AUTH_TOKEN ? "Tanımlı (Gizlendi)" : "TANIMLANMAMIŞ!");
+  console.log("- NODE_ENV:", process.env.NODE_ENV);
+
   await setupDatabase();
   const app = express();
   app.use(express.json());
@@ -96,6 +102,24 @@ async function startServer() {
   });
 
   // API routes
+  app.get("/api/db-test", async (req, res) => {
+    try {
+      await db.execute("SELECT 1");
+      res.json({ status: "ok", message: "Veritabanı bağlantısı başarılı" });
+    } catch (error) {
+      console.error("Veritabanı test hatası:", error);
+      res.status(500).json({ 
+        status: "error", 
+        message: "Veritabanı bağlantısı başarısız", 
+        details: error instanceof Error ? error.message : String(error),
+        env: {
+          url: process.env.TURSO_DATABASE_URL ? "Tanımlı" : "TANIMLANMAMIŞ",
+          token: process.env.TURSO_AUTH_TOKEN ? "Tanımlı" : "TANIMLANMAMIŞ"
+        }
+      });
+    }
+  });
+
   app.post("/api/upload", upload.single('image'), (req: any, res) => {
     if (!req.file) {
       return res.status(400).json({ error: 'Dosya yüklenemedi' });
@@ -218,11 +242,13 @@ async function startServer() {
 
   app.get("/api/siparisler", async (req, res) => {
     try {
+      console.log("Siparişler çekiliyor...");
       const result = await db.execute("SELECT * FROM siparisler");
+      console.log("Siparişler çekildi, satır sayısı:", result.rows.length);
       res.json(result.rows);
     } catch (error) {
-      console.error("Siparişleri çekme hatası:", error);
-      res.status(500).json({ error: "Siparişler çekilemedi" });
+      console.error("Siparişleri çekme hatası (DETAYLI):", error);
+      res.status(500).json({ error: "Siparişler çekilemedi", details: error instanceof Error ? error.message : String(error) });
     }
   });
 
