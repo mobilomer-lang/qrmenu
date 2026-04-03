@@ -99,27 +99,43 @@ export default function AdminPanel() {
 
   const fetchData = async () => {
     try {
-      const [katRes, yemekRes, sipRes, cagriRes, ayarlarRes, tamamlananCagriRes] = await Promise.all([
-        fetch('/api/kategoriler').then(r => r.ok ? r.json() : Promise.reject('Kategoriler çekilemedi')),
-        fetch('/api/yemekler').then(r => r.ok ? r.json() : Promise.reject('Yemekler çekilemedi')),
-        fetch('/api/siparisler').then(r => r.ok ? r.json() : Promise.reject('Siparişler çekilemedi')),
-        fetch('/api/cagrilar').then(r => r.ok ? r.json() : Promise.reject('Çağrılar çekilemedi')),
-        fetch('/api/ayarlar').then(r => r.ok ? r.json() : Promise.reject('Ayarlar çekilemedi')),
-        fetch('/api/cagrilar/tamamlanan').then(r => r.ok ? r.json() : Promise.reject('Tamamlanan çağrılar çekilemedi')),
+      console.log('Veriler çekiliyor...');
+      const results = await Promise.all([
+        fetch('/api/kategoriler').then(r => r.ok ? r.json() : r.json().catch(() => ({})).then(err => Promise.reject(`Kategoriler: ${err.error || r.statusText}`))),
+        fetch('/api/yemekler').then(r => r.ok ? r.json() : r.json().catch(() => ({})).then(err => Promise.reject(`Yemekler: ${err.error || r.statusText}`))),
+        fetch('/api/siparisler').then(r => r.ok ? r.json() : r.json().catch(() => ({})).then(err => Promise.reject(`Siparişler: ${err.error || r.statusText}`))),
+        fetch('/api/cagrilar').then(r => r.ok ? r.json() : r.json().catch(() => ({})).then(err => Promise.reject(`Çağrılar: ${err.error || r.statusText}`))),
+        fetch('/api/ayarlar').then(r => r.ok ? r.json() : r.json().catch(() => ({})).then(err => Promise.reject(`Ayarlar: ${err.error || r.statusText}`))),
+        fetch('/api/cagrilar/tamamlanan').then(r => r.ok ? r.json() : r.json().catch(() => ({})).then(err => Promise.reject(`Tamamlanan Çağrılar: ${err.error || r.statusText}`))),
       ]);
+      
+      const [katRes, yemekRes, sipRes, cagriRes, ayarlarRes, tamamlananCagriRes] = results;
+      
+      console.log('Veriler başarıyla çekildi:', { 
+        katCount: Array.isArray(katRes) ? katRes.length : 'N/A', 
+        yemCount: Array.isArray(yemekRes) ? yemekRes.length : 'N/A', 
+        sipCount: Array.isArray(sipRes) ? sipRes.length : 'N/A' 
+      });
+
       setKategoriler(katRes);
       setYemekler(yemekRes);
+      
+      if (!Array.isArray(sipRes)) {
+        console.error('Siparişler bir dizi değil:', sipRes);
+        throw new TypeError('Siparişler verisi hatalı formatta geldi');
+      }
+
       const sortedSiparisler = [...sipRes].sort((a: any, b: any) => {
         if (a.durum === 'Bekliyor' && b.durum !== 'Bekliyor') return -1;
         if (a.durum !== 'Bekliyor' && b.durum === 'Bekliyor') return 1;
-        return b.id - a.id;
+        return (b.id || 0) - (a.id || 0);
       });
       setSiparisler(sortedSiparisler);
       setCagrilar(cagriRes);
       setTamamlananCagrilar(tamamlananCagriRes);
       setAyarlar(ayarlarRes);
     } catch (error) {
-      console.error('Veri çekme hatası:', error);
+      console.error('Veri çekme hatası (DETAYLI):', error);
     }
   };
 
