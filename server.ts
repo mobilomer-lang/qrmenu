@@ -4,6 +4,7 @@ import { createServer as createViteServer } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
 import { createServer } from "http";
+import https from "https";
 import { Server } from "socket.io";
 import db from "./src/lib/turso";
 import multer from "multer";
@@ -382,6 +383,16 @@ async function startServer() {
 
   httpServer.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
+
+    // Render keep-alive ping (Her 10 dakikada bir kendi URL'sine istek atar)
+    const APP_URL = "https://qr.nrgonline.shop/";
+    setInterval(() => {
+      https.get(APP_URL, (res) => {
+        console.log(`Keep-alive ping sent to ${APP_URL} - Status: ${res.statusCode}`);
+      }).on('error', (err) => {
+        console.error("Keep-alive ping failed:", err.message);
+      });
+    }, 10 * 60 * 1000); // 10 minutes
   });
 }
 
