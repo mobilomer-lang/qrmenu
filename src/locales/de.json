@@ -1,0 +1,60 @@
+{
+  "common": {
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "add": "Hinzufügen",
+    "loading": "Laden...",
+    "error": "Ein Fehler ist aufgetreten",
+    "success": "Erfolg",
+    "actions": "Aktionen"
+  },
+  "menu": {
+    "categories": "Kategorien",
+    "cart": "Mein Warenkorb",
+    "order": "Bestellen",
+    "total": "Gesamt",
+    "emptyCart": "Ihr Warenkorb ist leer",
+    "checkout": "Zur Kasse",
+    "callWaiter": "Kellner rufen",
+    "waiterCalled": "Kellner gerufen, bitte warten.",
+    "tableNo": "Tischnummer",
+    "addToCart": "In den Warenkorb",
+    "price": "Preis"
+  },
+  "admin": {
+    "dashboard": "Dashboard",
+    "categories": "Kategorien",
+    "products": "Produkte",
+    "orders": "Bestellungen",
+    "settings": "Einstellungen",
+    "languages": "Sprachen",
+    "missingTranslations": "Fehlende Übersetzungen",
+    "appName": "App-Name",
+    "logo": "Logo-URL",
+    "systemStatus": "Systemstatus",
+    "open": "Offen",
+    "closed": "Geschlossen",
+    "addCategory": "Kategorie hinzufügen",
+    "addProduct": "Produkt hinzufügen",
+    "editCategory": "Kategorie bearbeiten",
+    "editProduct": "Produkt bearbeiten"
+  },
+  "order": {
+    "status": "Status",
+    "pending": "Wartend",
+    "preparing": "In Vorbereitung",
+    "ready": "Bereit",
+    "delivered": "Geliefert",
+    "cancelled": "Storniert",
+    "items": "Artikel",
+    "date": "Datum"
+  },
+  "profile": {
+    "name": "Vollständiger Name",
+    "email": "E-Mail",
+    "phone": "Telefon",
+    "address": "Adresse"
+  }
+}

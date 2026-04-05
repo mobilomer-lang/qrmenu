@@ -5,17 +5,23 @@ const socket = io();
 import { Salad, Coffee, Pizza, Utensils, Globe, Bell, ShoppingCart } from 'lucide-react';
 import WaiterModal from './WaiterModal';
 import OrderModal from './OrderModal';
+import PriceDisplay from './PriceDisplay';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const icons = { Salad, Coffee, Pizza, Utensils, Globe, Bell, ShoppingCart };
 
 interface Kategori {
   id: string;
   ad: string;
+  ad_en?: string;
+  ad_ar?: string;
+  ad_de?: string;
   iconName: string;
   sira: number;
 }
 
 export default function Menu() {
+  const { language, t, formatCurrency } = useLanguage();
   const [aktifKategori, setAktifKategori] = useState('');
   const [kategoriler, setKategoriler] = useState<Kategori[]>([]);
   const [yemekler, setYemekler] = useState<any[]>([]);
@@ -37,7 +43,10 @@ export default function Menu() {
         fetch('/api/ayarlar').then(r => r.json()),
       ]);
       setKategoriler(katRes.sort((a: Kategori, b: Kategori) => a.sira - b.sira));
-      if (katRes.length > 0 && !aktifKategori) setAktifKategori(katRes[0].ad);
+      if (katRes.length > 0 && !aktifKategori) {
+        const firstKat = katRes[0];
+        setAktifKategori(firstKat.ad);
+      }
       setYemekler(yemekRes);
       setAyarlar(ayarlarRes);
     } catch (error) {
@@ -55,29 +64,17 @@ export default function Menu() {
     };
   }, []);
 
-  const setQuantityDirectly = (yemek: any, newQuantity: number) => {
-    if (yemek.stokta === 0 && newQuantity > 0) {
-      setNotification(`Üzgünüz, ${yemek.ad} şu anda tükendi.`);
-      setTimeout(() => setNotification(null), 2000);
-      return;
-    }
+  const getLocalizedName = (item: any) => {
+    return item[`ad_${language}`] || item.ad;
+  };
 
-    setCart(prev => {
-      if (newQuantity <= 0) {
-        const { [yemek.id]: _, ...rest } = prev;
-        return rest;
-      }
-
-      return {
-        ...prev,
-        [yemek.id]: { item: yemek, quantity: newQuantity }
-      };
-    });
+  const getLocalizedDesc = (item: any) => {
+    return item[`aciklama_${language}`] || item.aciklama;
   };
 
   const updateQuantity = (yemek: any, delta: number) => {
     if (yemek.stokta === 0 && delta > 0) {
-      setNotification(`Üzgünüz, ${yemek.ad} şu anda tükendi.`);
+      setNotification(`${t('common.error')}: ${getLocalizedName(yemek)}`);
       setTimeout(() => setNotification(null), 2000);
       return;
     }
@@ -98,7 +95,7 @@ export default function Menu() {
     });
 
     if (delta > 0) {
-      setNotification(`${yemek.ad} sepete eklendi`);
+      setNotification(`${getLocalizedName(yemek)} ${t('menu.addToCart')}`);
       setTimeout(() => setNotification(null), 2000);
     }
   };
@@ -115,11 +112,11 @@ export default function Menu() {
         throw new Error('Sunucu hatası: ' + response.status);
       }
 
-      setNotification('Birazdan garson yanınızda');
+      setNotification(t('menu.waiterCalled'));
       setTimeout(() => setNotification(null), 2000);
     } catch (error) {
       console.error('Hata:', error);
-      alert('Garson çağrılamadı: ' + (error instanceof Error ? error.message : 'Bilinmeyen hata'));
+      alert(t('common.error'));
     }
   };
 
@@ -132,7 +129,7 @@ export default function Menu() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          yemekler: cartItems.map(c => `${c.quantity}x ${c.item.ad}`),
+          yemekler: cartItems.map(c => `${c.quantity}x ${getLocalizedName(c.item)}`),
           masaNo,
           toplamFiyat: cartItems.reduce((sum, c) => sum + (Number(c.item.fiyat) * c.quantity), 0),
         }),
@@ -143,11 +140,11 @@ export default function Menu() {
       }
 
       setCart({});
-      setNotification('Siparişiniz alındı!');
+      setNotification(t('common.success'));
       setTimeout(() => setNotification(null), 2000);
     } catch (error) {
       console.error('Hata:', error);
-      alert('Sipariş gönderilemedi: ' + (error instanceof Error ? error.message : 'Bilinmeyen hata'));
+      alert(t('common.error'));
     }
   };
 
@@ -159,7 +156,7 @@ export default function Menu() {
         <div className="fixed inset-0 flex items-center justify-center bg-white dark:bg-gray-950 z-50">
           <div className="text-center animate-pulse">
             <Utensils size={48} className="text-green-500 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Yükleniyor...</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('common.loading')}</h1>
           </div>
         </div>
       ) : (
@@ -192,7 +189,7 @@ export default function Menu() {
           `}</style>
 
           {ayarlar.sistemAcik === 0 ? (
-            <div className="p-4 text-center text-red-600 dark:text-red-400 font-bold">Restoran şu anda kapalıdır.</div>
+            <div className="p-4 text-center text-red-600 dark:text-red-400 font-bold">{t('admin.closed')}</div>
           ) : (
             <>
               {/* Kategori Barı */}
@@ -200,6 +197,7 @@ export default function Menu() {
                 {kategoriler.map(k => {
                   const Icon = (icons as any)[k.iconName] || Utensils;
                   const isActive = aktifKategori === k.ad;
+                  const localizedName = getLocalizedName(k);
                   return (
                     <button 
                       key={k.id}
@@ -213,7 +211,7 @@ export default function Menu() {
                       <div className={`p-3 rounded-2xl mb-2 ${isActive ? 'bg-white/20' : 'bg-gray-100 dark:bg-gray-700'}`}>
                         <Icon size={24} className={isActive ? 'text-white' : 'text-gray-500 dark:text-gray-300'} />
                       </div>
-                      <span className={`text-sm font-medium ${isActive ? 'text-white' : 'text-gray-500 dark:text-gray-300'}`}>{k.ad}</span>
+                      <span className={`text-sm font-medium ${isActive ? 'text-white' : 'text-gray-500 dark:text-gray-300'}`}>{localizedName}</span>
                       {isActive && <div className="h-0.5 w-8 bg-white mt-1"></div>}
                     </button>
                   );
@@ -224,6 +222,8 @@ export default function Menu() {
               <div className="px-4 space-y-6">
                 {yemekler.filter(y => y.kategori === aktifKategori && y.aktif === 1).map(yemek => {
                   const inputVal = inputQuantities[yemek.id] ?? 1;
+                  const localizedName = getLocalizedName(yemek);
+                  const localizedDesc = getLocalizedDesc(yemek);
                   return (
                     <div 
                       key={yemek.id} 
@@ -235,11 +235,11 @@ export default function Menu() {
                           className="font-bold text-[16px] text-black dark:text-white cursor-pointer hover:text-green-600 transition-colors"
                           onClick={() => setSelectedYemek(yemek)}
                         >
-                          {yemek.ad} {yemek.stokta === 0 && <span className="text-red-500 text-xs ml-2">(Tükendi)</span>}
+                          {localizedName} {yemek.stokta === 0 && <span className="text-red-500 text-xs ml-2">({t('order.cancelled')})</span>}
                         </h3>
-                        <p className="text-gray-400 dark:text-gray-400 text-sm line-clamp-2">{yemek.aciklama}</p>
+                        <p className="text-gray-400 dark:text-gray-400 text-sm line-clamp-2">{localizedDesc}</p>
                         <div className="flex items-center justify-between mt-2">
-                          <span className="bg-green-500 text-white font-bold px-4 py-1 rounded-full text-sm w-fit shadow-md">₺{yemek.fiyat},00</span>
+                          <PriceDisplay price={yemek.fiyat} />
                           <div className="flex items-center gap-3 bg-gray-100 dark:bg-gray-700 rounded-full px-2 py-1">
                             <button 
                               onClick={() => updateQuantity(yemek, -inputVal)} 
@@ -270,7 +270,7 @@ export default function Menu() {
                       {/* Sağ: Resim (Oval Kavis Efekti) */}
                       <img 
                         src={yemek.resim || 'https://picsum.photos/seed/food/200/200'} 
-                        alt={yemek.ad} 
+                        alt={localizedName} 
                         className="food-card-image cursor-pointer hover:opacity-90 transition-opacity"
                         referrerPolicy="no-referrer"
                         onClick={() => setSelectedYemek(yemek)}
@@ -286,10 +286,10 @@ export default function Menu() {
               {/* İşlem Butonları */}
               <div className="fixed bottom-4 left-0 w-full p-4 flex gap-4">
                 <button onClick={() => setIsWaiterModalOpen(true)} className="flex-1 bg-gray-800 dark:bg-gray-700 text-white py-3 rounded-full flex items-center justify-center gap-2 font-semibold">
-                  <Bell size={20} /> Garson Çağır
+                  <Bell size={20} /> {t('menu.callWaiter')}
                 </button>
                 <button onClick={() => setIsOrderModalOpen(true)} className="flex-1 bg-green-500 text-white py-3 rounded-full flex items-center justify-center gap-2 font-semibold">
-                  <ShoppingCart size={20} /> Sipariş Ver ({cartCount})
+                  <ShoppingCart size={20} /> {t('menu.order')} ({cartCount})
                 </button>
               </div>
             </>
@@ -318,7 +318,7 @@ export default function Menu() {
                 <div className="relative h-64">
                   <img 
                     src={selectedYemek.resim || 'https://picsum.photos/seed/food/400/400'} 
-                    alt={selectedYemek.ad} 
+                    alt={getLocalizedName(selectedYemek)} 
                     className="w-full h-full object-cover"
                     referrerPolicy="no-referrer"
                   />
@@ -326,15 +326,15 @@ export default function Menu() {
                 <div className="p-6">
                   <div className="flex justify-between items-start mb-4">
                     <div>
-                      <h2 className="text-2xl font-black text-gray-900 dark:text-white leading-tight">{selectedYemek.ad}</h2>
-                      <span className="text-green-600 dark:text-green-400 font-bold text-lg">₺{selectedYemek.fiyat},00</span>
+                      <h2 className="text-2xl font-black text-gray-900 dark:text-white leading-tight">{getLocalizedName(selectedYemek)}</h2>
+                      <PriceDisplay price={selectedYemek.fiyat} className="mt-1" />
                     </div>
                     {selectedYemek.stokta === 0 && (
-                      <span className="bg-red-100 text-red-600 px-3 py-1 rounded-full text-xs font-bold">Tükendi</span>
+                      <span className="bg-red-100 text-red-600 px-3 py-1 rounded-full text-xs font-bold">{t('order.cancelled')}</span>
                     )}
                   </div>
                   <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed mb-6">
-                    {selectedYemek.aciklama || "Bu ürün için henüz bir açıklama girilmemiş."}
+                    {getLocalizedDesc(selectedYemek) || t('common.error')}
                   </p>
                   <button 
                     onClick={() => setSelectedYemek(null)}
@@ -351,4 +351,3 @@ export default function Menu() {
     </div>
   );
 }
-

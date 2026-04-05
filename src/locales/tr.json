@@ -1,0 +1,60 @@
+{
+  "common": {
+    "save": "Kaydet",
+    "cancel": "İptal",
+    "delete": "Sil",
+    "edit": "Düzenle",
+    "add": "Ekle",
+    "loading": "Yükleniyor...",
+    "error": "Bir hata oluştu",
+    "success": "Başarılı",
+    "actions": "İşlemler"
+  },
+  "menu": {
+    "categories": "Kategoriler",
+    "cart": "Sepetim",
+    "order": "Sipariş Ver",
+    "total": "Toplam",
+    "emptyCart": "Sepetiniz boş",
+    "checkout": "Siparişi Tamamla",
+    "callWaiter": "Garson Çağır",
+    "waiterCalled": "Garson çağrıldı, lütfen bekleyin.",
+    "tableNo": "Masa No",
+    "addToCart": "Sepete Ekle",
+    "price": "Fiyat"
+  },
+  "admin": {
+    "dashboard": "Panel",
+    "categories": "Kategoriler",
+    "products": "Ürünler",
+    "orders": "Siparişler",
+    "settings": "Ayarlar",
+    "languages": "Diller",
+    "missingTranslations": "Eksik Çeviriler",
+    "appName": "Uygulama Adı",
+    "logo": "Logo URL",
+    "systemStatus": "Sistem Durumu",
+    "open": "Açık",
+    "closed": "Kapalı",
+    "addCategory": "Kategori Ekle",
+    "addProduct": "Ürün Ekle",
+    "editCategory": "Kategoriyi Düzenle",
+    "editProduct": "Ürünü Düzenle"
+  },
+  "order": {
+    "status": "Durum",
+    "pending": "Bekliyor",
+    "preparing": "Hazırlanıyor",
+    "ready": "Hazır",
+    "delivered": "Teslim Edildi",
+    "cancelled": "İptal Edildi",
+    "items": "Ürünler",
+    "date": "Tarih"
+  },
+  "profile": {
+    "name": "Ad Soyad",
+    "email": "E-posta",
+    "phone": "Telefon",
+    "address": "Adres"
+  }
+}

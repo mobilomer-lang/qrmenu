@@ -1,0 +1,60 @@
+{
+  "common": {
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "delete": "حذف",
+    "edit": "تعديل",
+    "add": "إضافة",
+    "loading": "جاري التحميل...",
+    "error": "حدث خطأ ما",
+    "success": "نجاح",
+    "actions": "الإجراءات"
+  },
+  "menu": {
+    "categories": "الفئات",
+    "cart": "سلة التسوق",
+    "order": "طلب",
+    "total": "المجموع",
+    "emptyCart": "سلة التسوق فارغة",
+    "checkout": "إتمام الطلب",
+    "callWaiter": "طلب النادل",
+    "waiterCalled": "تم طلب النادل، يرجى الانتظار.",
+    "tableNo": "رقم الطاولة",
+    "addToCart": "أضف إلى السلة",
+    "price": "السعر"
+  },
+  "admin": {
+    "dashboard": "لوحة التحكم",
+    "categories": "الفئات",
+    "products": "المنتجات",
+    "orders": "الطلبات",
+    "settings": "الإعدادات",
+    "languages": "اللغات",
+    "missingTranslations": "الترجمات المفقودة",
+    "appName": "اسم التطبيق",
+    "logo": "رابط الشعار",
+    "systemStatus": "حالة النظام",
+    "open": "مفتوح",
+    "closed": "مغلق",
+    "addCategory": "إضافة فئة",
+    "addProduct": "إضافة منتج",
+    "editCategory": "تعديل الفئة",
+    "editProduct": "تعديل المنتج"
+  },
+  "order": {
+    "status": "الحالة",
+    "pending": "قيد الانتظار",
+    "preparing": "جاري التحضير",
+    "ready": "جاهز",
+    "delivered": "تم التوصيل",
+    "cancelled": "ملغي",
+    "items": "العناصر",
+    "date": "التاريخ"
+  },
+  "profile": {
+    "name": "الاسم الكامل",
+    "email": "البريد الإلكتروني",
+    "phone": "الهاتف",
+    "address": "العنوان"
+  }
+}

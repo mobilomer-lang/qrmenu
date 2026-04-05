@@ -1,0 +1,60 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "success": "Success",
+    "actions": "Actions"
+  },
+  "menu": {
+    "categories": "Categories",
+    "cart": "My Cart",
+    "order": "Place Order",
+    "total": "Total",
+    "emptyCart": "Your cart is empty",
+    "checkout": "Checkout",
+    "callWaiter": "Call Waiter",
+    "waiterCalled": "Waiter called, please wait.",
+    "tableNo": "Table No",
+    "addToCart": "Add to Cart",
+    "price": "Price"
+  },
+  "admin": {
+    "dashboard": "Dashboard",
+    "categories": "Categories",
+    "products": "Products",
+    "orders": "Orders",
+    "settings": "Settings",
+    "languages": "Languages",
+    "missingTranslations": "Missing Translations",
+    "appName": "App Name",
+    "logo": "Logo URL",
+    "systemStatus": "System Status",
+    "open": "Open",
+    "closed": "Closed",
+    "addCategory": "Add Category",
+    "addProduct": "Add Product",
+    "editCategory": "Edit Category",
+    "editProduct": "Edit Product"
+  },
+  "order": {
+    "status": "Status",
+    "pending": "Pending",
+    "preparing": "Preparing",
+    "ready": "Ready",
+    "delivered": "Delivered",
+    "cancelled": "Cancelled",
+    "items": "Items",
+    "date": "Date"
+  },
+  "profile": {
+    "name": "Full Name",
+    "email": "Email",
+    "phone": "Phone",
+    "address": "Address"
+  }
+}

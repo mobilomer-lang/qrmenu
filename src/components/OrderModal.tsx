@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
+import PriceDisplay from './PriceDisplay';
 
 interface OrderModalProps {
   isOpen: boolean;
@@ -43,7 +45,7 @@ export default function OrderModal({ isOpen, onClose, onOrder, cart, updateQuant
               <div key={item.id} className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 p-3 rounded-2xl">
                 <div className="flex-1">
                   <p className="font-bold text-sm dark:text-white">{item.ad}</p>
-                  <p className="text-xs text-green-600 font-semibold">₺{item.fiyat * quantity}</p>
+                  <PriceDisplay price={item.fiyat * quantity} className="!gap-1" />
                 </div>
                 <div className="flex items-center gap-3 bg-white dark:bg-gray-700 rounded-full px-2 py-1 shadow-sm">
                   <button 
@@ -68,7 +70,7 @@ export default function OrderModal({ isOpen, onClose, onOrder, cart, updateQuant
         <div className="border-t border-gray-100 dark:border-gray-800 pt-4 mb-4">
           <div className="flex justify-between items-center mb-4">
             <span className="text-gray-500 dark:text-gray-400 font-medium">Toplam Tutar:</span>
-            <span className="text-xl font-black text-green-600">₺{total},00</span>
+            <PriceDisplay price={total} className="text-xl" />
           </div>
           <input
             type="text"

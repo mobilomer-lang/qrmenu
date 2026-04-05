@@ -32,22 +32,121 @@ cloudinary.config({
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
+const tr = JSON.parse(fs.readFileSync(path.join(__dirname, 'src/locales/tr.json'), 'utf8'));
+const en = JSON.parse(fs.readFileSync(path.join(__dirname, 'src/locales/en.json'), 'utf8'));
+const ar = JSON.parse(fs.readFileSync(path.join(__dirname, 'src/locales/ar.json'), 'utf8'));
+const de = JSON.parse(fs.readFileSync(path.join(__dirname, 'src/locales/de.json'), 'utf8'));
+
+// Exchange Rates Cache
+let exchangeRates: any = null;
+let lastFetchTime = 0;
+const CACHE_DURATION = 6 * 60 * 60 * 1000; // 6 hours (21600 seconds)
+
+async function fetchExchangeRates() {
+  try {
+    const data: any = await new Promise((resolve, reject) => {
+      https.get('https://api.exchangerate-api.com/v4/latest/TRY', (res) => {
+        let body = '';
+        res.on('data', (chunk) => body += chunk);
+        res.on('end', () => {
+          try {
+            const parsed = JSON.parse(body);
+            resolve(parsed);
+          } catch (e) {
+            reject(e);
+          }
+        });
+      }).on('error', reject);
+    });
+    exchangeRates = data;
+    lastFetchTime = Date.now();
+    return exchangeRates;
+  } catch (error) {
+    console.error('Exchange rates fetch error:', error);
+    return exchangeRates; // Return stale data if fetch fails
+  }
+}
+
 async function setupDatabase() {
+  await db.execute(`CREATE TABLE IF NOT EXISTS diller (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    kod TEXT NOT NULL UNIQUE,
+    ad TEXT NOT NULL,
+    bayrak TEXT,
+    aktif INTEGER DEFAULT 1,
+    rtl INTEGER DEFAULT 0
+  )`);
+  
+  // Sütun kontrolü (eğer tablo zaten varsa ve bayrak sütunu eksikse)
+  try {
+    await db.execute("ALTER TABLE diller ADD COLUMN bayrak TEXT");
+  } catch (e) {
+    // Sütun zaten mevcut olabilir, hatayı yoksay
+  }
+
+  // Varsayılan dilleri ekle/güncelle
+  const diller = [
+    { kod: 'tr', ad: 'Türkçe', bayrak: 'https://flagcdn.com/w80/tr.png', aktif: 1, rtl: 0 },
+    { kod: 'en', ad: 'English', bayrak: 'https://flagcdn.com/w80/gb.png', aktif: 1, rtl: 0 },
+    { kod: 'ar', ad: 'العربية', bayrak: 'https://flagcdn.com/w80/sa.png', aktif: 1, rtl: 1 },
+    { kod: 'de', ad: 'Deutsch', bayrak: 'https://flagcdn.com/w80/de.png', aktif: 1, rtl: 0 }
+  ];
+  
+  for (const dil of diller) {
+    // Önce eklemeyi dene
+    await db.execute({
+      sql: "INSERT OR IGNORE INTO diller (kod, ad, bayrak, aktif, rtl) VALUES (?, ?, ?, ?, ?)",
+      args: [dil.kod, dil.ad, dil.bayrak, dil.aktif, dil.rtl]
+    });
+    // Sonra bayrağı güncelle (eğer zaten varsa)
+    await db.execute({
+      sql: "UPDATE diller SET bayrak = ? WHERE kod = ?",
+      args: [dil.bayrak, dil.kod]
+    });
+  }
+
   await db.execute(`CREATE TABLE IF NOT EXISTS kategoriler (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     ad TEXT NOT NULL,
+    ad_en TEXT,
+    ad_ar TEXT,
+    ad_de TEXT,
     iconName TEXT,
     sira INTEGER
   )`);
+
+  // Kategoriler tablosuna yeni sütunları ekle (eğer yoksa)
+  const kategoriSutunlar = ['ad_en', 'ad_ar', 'ad_de'];
+  for (const sutun of kategoriSutunlar) {
+    try {
+      await db.execute(`ALTER TABLE kategoriler ADD COLUMN ${sutun} TEXT`);
+    } catch (e) {}
+  }
+
   await db.execute(`CREATE TABLE IF NOT EXISTS yemekler (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     ad TEXT NOT NULL,
+    ad_en TEXT,
+    ad_ar TEXT,
+    ad_de TEXT,
     fiyat REAL,
     aciklama TEXT,
+    aciklama_en TEXT,
+    aciklama_ar TEXT,
+    aciklama_de TEXT,
     resim TEXT,
     kategori TEXT,
     aktif INTEGER DEFAULT 1
   )`);
+
+  // Yemekler tablosuna yeni sütunları ekle (eğer yoksa)
+  const yemekSutunlar = ['ad_en', 'ad_ar', 'ad_de', 'aciklama_en', 'aciklama_ar', 'aciklama_de'];
+  for (const sutun of yemekSutunlar) {
+    try {
+      await db.execute(`ALTER TABLE yemekler ADD COLUMN ${sutun} TEXT`);
+    } catch (e) {}
+  }
+
   await db.execute(`CREATE TABLE IF NOT EXISTS siparisler (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     yemekler TEXT,
@@ -69,9 +168,57 @@ async function setupDatabase() {
   await db.execute(`CREATE TABLE IF NOT EXISTS ayarlar (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     uygulamaAdi TEXT DEFAULT 'Green Restaurant',
+    uygulamaAdi_en TEXT,
+    uygulamaAdi_ar TEXT,
+    uygulamaAdi_de TEXT,
     logoUrl TEXT,
     sistemAcik INTEGER DEFAULT 1
   )`);
+
+  // Ayarlar tablosuna yeni sütunları ekle (eğer yoksa)
+  const ayarSutunlar = ['uygulamaAdi_en', 'uygulamaAdi_ar', 'uygulamaAdi_de'];
+  for (const sutun of ayarSutunlar) {
+    try {
+      await db.execute(`ALTER TABLE ayarlar ADD COLUMN ${sutun} TEXT`);
+    } catch (e) {}
+  }
+
+  await db.execute(`CREATE TABLE IF NOT EXISTS ceviriler (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    anahtar TEXT NOT NULL,
+    dil_kod TEXT NOT NULL,
+    deger TEXT NOT NULL,
+    UNIQUE(anahtar, dil_kod)
+  )`);
+
+  // Başlangıç çevirilerini ekle (eğer tablo boşsa)
+  const checkCeviriler = await db.execute("SELECT COUNT(*) as count FROM ceviriler");
+  if (Number(checkCeviriler.rows[0].count) === 0) {
+    const initialLocales: any = { tr, en, ar, de };
+    for (const lang in initialLocales) {
+      const flatTranslations = (obj: any, prefix = '') => {
+        let items: any[] = [];
+        for (const key in obj) {
+          const fullKey = prefix ? `${prefix}.${key}` : key;
+          if (typeof obj[key] === 'object') {
+            items = [...items, ...flatTranslations(obj[key], fullKey)];
+          } else {
+            items.push({ key: fullKey, value: obj[key] });
+          }
+        }
+        return items;
+      };
+
+      const flattened = flatTranslations(initialLocales[lang]);
+      for (const item of flattened) {
+        await db.execute({
+          sql: "INSERT OR IGNORE INTO ceviriler (anahtar, dil_kod, deger) VALUES (?, ?, ?)",
+          args: [item.key, lang, item.value]
+        });
+      }
+    }
+  }
+
   await db.execute(`INSERT OR IGNORE INTO ayarlar (id) VALUES (1)`);
   console.log("Veritabanı tabloları kontrol edildi/oluşturuldu.");
 }
@@ -145,28 +292,32 @@ async function startServer() {
   // Kategoriler
   app.get("/api/kategoriler", async (req, res) => {
     const result = await db.execute("SELECT * FROM kategoriler ORDER BY sira ASC");
-    console.log('Kategoriler:', result.rows);
     res.json(result.rows);
   });
 
   app.post("/api/kategoriler", async (req, res) => {
-    const { ad, iconName, sira } = req.body;
-    await db.execute({ sql: "INSERT INTO kategoriler (ad, iconName, sira) VALUES (?, ?, ?)", args: [ad, iconName, sira] });
+    const { ad, ad_en, ad_ar, ad_de, iconName, sira } = req.body;
+    await db.execute({ 
+      sql: "INSERT INTO kategoriler (ad, ad_en, ad_ar, ad_de, iconName, sira) VALUES (?, ?, ?, ?, ?, ?)", 
+      args: [ad, ad_en, ad_ar, ad_de, iconName, sira] 
+    });
     io.emit("data-changed");
     res.json({ status: "ok" });
   });
 
   app.put("/api/kategoriler/:id", async (req, res) => {
     const { id } = req.params;
-    const { ad, iconName, sira } = req.body;
+    const { ad, ad_en, ad_ar, ad_de, iconName, sira } = req.body;
     
-    // Mevcut kategoriyi al
     const kategori = (await db.execute({ sql: "SELECT * FROM kategoriler WHERE id = ?", args: [id] })).rows[0];
     
     await db.execute({ 
-      sql: "UPDATE kategoriler SET ad = ?, iconName = ?, sira = ? WHERE id = ?", 
+      sql: "UPDATE kategoriler SET ad = ?, ad_en = ?, ad_ar = ?, ad_de = ?, iconName = ?, sira = ? WHERE id = ?", 
       args: [
         ad !== undefined ? ad : kategori.ad, 
+        ad_en !== undefined ? ad_en : kategori.ad_en, 
+        ad_ar !== undefined ? ad_ar : kategori.ad_ar, 
+        ad_de !== undefined ? ad_de : kategori.ad_de, 
         iconName !== undefined ? iconName : kategori.iconName, 
         sira !== undefined ? sira : kategori.sira, 
         id
@@ -190,25 +341,33 @@ async function startServer() {
   });
 
   app.post("/api/yemekler", async (req, res) => {
-    const { ad, fiyat, aciklama, resim, kategori, aktif } = req.body;
-    await db.execute({ sql: "INSERT INTO yemekler (ad, fiyat, aciklama, resim, kategori, aktif) VALUES (?, ?, ?, ?, ?, ?)", args: [ad, fiyat, aciklama, resim, kategori, aktif ? 1 : 0] });
+    const { ad, ad_en, ad_ar, ad_de, fiyat, aciklama, aciklama_en, aciklama_ar, aciklama_de, resim, kategori, aktif } = req.body;
+    await db.execute({ 
+      sql: "INSERT INTO yemekler (ad, ad_en, ad_ar, ad_de, fiyat, aciklama, aciklama_en, aciklama_ar, aciklama_de, resim, kategori, aktif) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", 
+      args: [ad, ad_en, ad_ar, ad_de, fiyat, aciklama, aciklama_en, aciklama_ar, aciklama_de, resim, kategori, aktif ? 1 : 0] 
+    });
     io.emit("data-changed");
     res.json({ status: "ok" });
   });
 
   app.put("/api/yemekler/:id", async (req, res) => {
     const { id } = req.params;
-    const { ad, fiyat, aciklama, resim, kategori, aktif } = req.body;
+    const { ad, ad_en, ad_ar, ad_de, fiyat, aciklama, aciklama_en, aciklama_ar, aciklama_de, resim, kategori, aktif } = req.body;
     
-    // Mevcut yemeği al
     const yemek = (await db.execute({ sql: "SELECT * FROM yemekler WHERE id = ?", args: [id] })).rows[0];
     
     await db.execute({ 
-      sql: "UPDATE yemekler SET ad = ?, fiyat = ?, aciklama = ?, resim = ?, kategori = ?, aktif = ? WHERE id = ?", 
+      sql: "UPDATE yemekler SET ad = ?, ad_en = ?, ad_ar = ?, ad_de = ?, fiyat = ?, aciklama = ?, aciklama_en = ?, aciklama_ar = ?, aciklama_de = ?, resim = ?, kategori = ?, aktif = ? WHERE id = ?", 
       args: [
         ad !== undefined ? ad : yemek.ad, 
+        ad_en !== undefined ? ad_en : yemek.ad_en, 
+        ad_ar !== undefined ? ad_ar : yemek.ad_ar, 
+        ad_de !== undefined ? ad_de : yemek.ad_de, 
         fiyat !== undefined ? fiyat : yemek.fiyat, 
         aciklama !== undefined ? aciklama : yemek.aciklama, 
+        aciklama_en !== undefined ? aciklama_en : yemek.aciklama_en, 
+        aciklama_ar !== undefined ? aciklama_ar : yemek.aciklama_ar, 
+        aciklama_de !== undefined ? aciklama_de : yemek.aciklama_de, 
         resim !== undefined ? resim : yemek.resim, 
         kategori !== undefined ? kategori : yemek.kategori, 
         aktif !== undefined ? (aktif ? 1 : 0) : yemek.aktif, 
@@ -320,6 +479,13 @@ async function startServer() {
     res.json(result.rows[0]);
   });
 
+  app.get("/api/exchange-rates", async (req, res) => {
+    if (!exchangeRates || Date.now() - lastFetchTime > CACHE_DURATION) {
+      await fetchExchangeRates();
+    }
+    res.json(exchangeRates);
+  });
+
   app.get("/manifest.json", async (req, res) => {
     const result = await db.execute("SELECT * FROM ayarlar WHERE id = 1");
     const ayarlar = result.rows[0];
@@ -346,13 +512,110 @@ async function startServer() {
   });
 
   app.put("/api/ayarlar", async (req, res) => {
-    const { uygulamaAdi, logoUrl, sistemAcik } = req.body;
+    const { uygulamaAdi, uygulamaAdi_en, uygulamaAdi_ar, uygulamaAdi_de, logoUrl, sistemAcik } = req.body;
     await db.execute({
-      sql: "UPDATE ayarlar SET uygulamaAdi = ?, logoUrl = ?, sistemAcik = ? WHERE id = 1",
-      args: [uygulamaAdi, logoUrl, sistemAcik ? 1 : 0],
+      sql: "UPDATE ayarlar SET uygulamaAdi = ?, uygulamaAdi_en = ?, uygulamaAdi_ar = ?, uygulamaAdi_de = ?, logoUrl = ?, sistemAcik = ? WHERE id = 1",
+      args: [uygulamaAdi, uygulamaAdi_en, uygulamaAdi_ar, uygulamaAdi_de, logoUrl, sistemAcik ? 1 : 0],
     });
     io.emit("data-changed");
     res.json({ status: "ok" });
+  });
+
+  // Diller
+  app.get("/api/diller", async (req, res) => {
+    const result = await db.execute("SELECT * FROM diller");
+    res.json(result.rows);
+  });
+
+  app.post("/api/diller", async (req, res) => {
+    const { kod, ad, bayrak, aktif, rtl } = req.body;
+    await db.execute({
+      sql: "INSERT INTO diller (kod, ad, bayrak, aktif, rtl) VALUES (?, ?, ?, ?, ?)",
+      args: [kod, ad, bayrak, aktif ? 1 : 0, rtl ? 1 : 0]
+    });
+    io.emit("data-changed");
+    res.json({ status: "ok" });
+  });
+
+  app.put("/api/diller/:id", async (req, res) => {
+    const { id } = req.params;
+    const { kod, ad, bayrak, aktif, rtl } = req.body;
+    await db.execute({
+      sql: "UPDATE diller SET kod = ?, ad = ?, bayrak = ?, aktif = ?, rtl = ? WHERE id = ?",
+      args: [kod, ad, bayrak, aktif ? 1 : 0, rtl ? 1 : 0, id]
+    });
+    io.emit("data-changed");
+    res.json({ status: "ok" });
+  });
+
+  app.delete("/api/diller/:id", async (req, res) => {
+    const { id } = req.params;
+    await db.execute({ sql: "DELETE FROM diller WHERE id = ?", args: [id] });
+    io.emit("data-changed");
+    res.json({ status: "ok" });
+  });
+
+  // Çeviriler
+  app.get("/api/ceviriler/:lang", async (req, res) => {
+    const { lang } = req.params;
+    const result = await db.execute({
+      sql: "SELECT anahtar, deger FROM ceviriler WHERE dil_kod = ?",
+      args: [lang]
+    });
+    
+    // Flattened listeyi nested objeye çevir
+    const translations: any = {};
+    result.rows.forEach((row: any) => {
+      const keys = row.anahtar.split('.');
+      let current = translations;
+      for (let i = 0; i < keys.length; i++) {
+        const key = keys[i];
+        if (i === keys.length - 1) {
+          current[key] = row.deger;
+        } else {
+          current[key] = current[key] || {};
+          current = current[key];
+        }
+      }
+    });
+    
+    res.json(translations);
+  });
+
+  app.post("/api/ceviriler", async (req, res) => {
+    const { anahtar, dil_kod, deger } = req.body;
+    await db.execute({
+      sql: "INSERT OR REPLACE INTO ceviriler (anahtar, dil_kod, deger) VALUES (?, ?, ?)",
+      args: [anahtar, dil_kod, deger]
+    });
+    io.emit("data-changed");
+    res.json({ status: "ok" });
+  });
+
+  app.get("/api/ceviriler-eksik", async (req, res) => {
+    // Tüm anahtarları al
+    const keysResult = await db.execute("SELECT DISTINCT anahtar FROM ceviriler");
+    const keys = keysResult.rows.map((r: any) => r.anahtar);
+    
+    // Tüm dilleri al
+    const langsResult = await db.execute("SELECT kod FROM diller WHERE aktif = 1");
+    const langs = langsResult.rows.map((r: any) => r.kod);
+    
+    const missing: any[] = [];
+    
+    for (const key of keys) {
+      for (const lang of langs) {
+        const exists = await db.execute({
+          sql: "SELECT 1 FROM ceviriler WHERE anahtar = ? AND dil_kod = ?",
+          args: [key, lang]
+        });
+        if (exists.rows.length === 0) {
+          missing.push({ key, lang });
+        }
+      }
+    }
+    
+    res.json(missing);
   });
 
   // Vite middleware
