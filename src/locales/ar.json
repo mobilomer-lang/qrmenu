@@ -21,7 +21,13 @@
     "waiterCalled": "تم طلب النادل، يرجى الانتظار.",
     "tableNo": "رقم الطاولة",
     "addToCart": "أضف إلى السلة",
-    "price": "السعر"
+    "price": "السعر",
+    "orderSummary": "ملخص الطلب",
+    "totalAmount": "المبلغ الإجمالي",
+    "enterTableNo": "أدخل رقم طاولتك",
+    "call": "اتصال",
+    "calling": "جاري الاتصال...",
+    "ordering": "جاري الطلب..."
   },
   "admin": {
     "dashboard": "لوحة التحكم",

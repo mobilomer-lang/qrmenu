@@ -21,7 +21,13 @@
     "waiterCalled": "Kellner gerufen, bitte warten.",
     "tableNo": "Tischnummer",
     "addToCart": "In den Warenkorb",
-    "price": "Preis"
+    "price": "Preis",
+    "orderSummary": "Bestellübersicht",
+    "totalAmount": "Gesamtbetrag",
+    "enterTableNo": "Tischnummer eingeben",
+    "call": "Rufen",
+    "calling": "Rufe...",
+    "ordering": "Bestellung wird aufgegeben..."
   },
   "admin": {
     "dashboard": "Dashboard",

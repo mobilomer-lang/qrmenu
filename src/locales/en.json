@@ -21,7 +21,13 @@
     "waiterCalled": "Waiter called, please wait.",
     "tableNo": "Table No",
     "addToCart": "Add to Cart",
-    "price": "Price"
+    "price": "Price",
+    "orderSummary": "Order Summary",
+    "totalAmount": "Total Amount",
+    "enterTableNo": "Enter Your Table Number",
+    "call": "Call",
+    "calling": "Calling...",
+    "ordering": "Ordering..."
   },
   "admin": {
     "dashboard": "Dashboard",

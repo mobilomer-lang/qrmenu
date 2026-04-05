@@ -21,7 +21,13 @@
     "waiterCalled": "Garson çağrıldı, lütfen bekleyin.",
     "tableNo": "Masa No",
     "addToCart": "Sepete Ekle",
-    "price": "Fiyat"
+    "price": "Fiyat",
+    "orderSummary": "Sipariş Özeti",
+    "totalAmount": "Toplam Tutar",
+    "enterTableNo": "Masa Numaranızı Giriniz",
+    "call": "Çağır",
+    "calling": "Çağrılıyor...",
+    "ordering": "Sipariş Veriliyor..."
   },
   "admin": {
     "dashboard": "Panel",
